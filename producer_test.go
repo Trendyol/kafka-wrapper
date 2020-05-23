@@ -15,10 +15,8 @@ var _ = Describe("When publishing a message", func() {
 		var (
 			message = "test"
 			conf    = kafka_wrapper.ConnectionParameters{
-				Version:         "2.2.0",
 				ConsumerGroupID: "some-id",
-				ClientID:        "oms-event-generator",
-				Topic:           []string{"createClaim"},
+				Topics:          []string{"createClaim"},
 			}
 			receivedPayload string
 			err             error
@@ -27,11 +25,14 @@ var _ = Describe("When publishing a message", func() {
 
 		test_utils.BeforeAll(func() {
 			conf.Brokers = KafkaContainer.Address()
+			conf.Conf = configuration("2.2.0")
+			time.Sleep(5 * time.Second)
+
 			producer, err = kafka_wrapper.NewProducer(conf)
 			Expect(err).NotTo(HaveOccurred())
 			_, _, err = producer.SendMessage(&sarama.ProducerMessage{
 				Value: sarama.StringEncoder(message),
-				Topic: conf.Topic[0],
+				Topic: conf.Topics[0],
 			})
 			time.Sleep(5 * time.Second)
 			_, receivedPayload, _ = test_utils.Consume(conf)
@@ -49,9 +50,9 @@ var _ = Describe("When publishing a message", func() {
 	Context("and the broker is unreachable", func() {
 		var (
 			wrongConf = kafka_wrapper.ConnectionParameters{
-				Version: "2.2.0",
+				Conf:    sarama.NewConfig(),
 				Brokers: "localhost:9093",
-				Topic:   []string{"createClaim"},
+				Topics:  []string{"createClaim"},
 			}
 			expectedError error
 		)
@@ -63,10 +64,19 @@ var _ = Describe("When publishing a message", func() {
 		It("should produce an error", func() {
 			Expect(expectedError).To(HaveOccurred())
 		})
-
-		It("should produce the expected error", func() {
-			Expect(expectedError.Error()).Should(Equal("kafka: client has run out of available brokers to talk to (Is your cluster reachable?)"))
-		})
 	})
 
 })
+
+func configuration(version string) *sarama.Config {
+	kafkaConfig := sarama.NewConfig()
+	v, err := sarama.ParseKafkaVersion("2.2.0")
+	Expect(err).NotTo(HaveOccurred())
+	kafkaConfig.Version = v
+	kafkaConfig.ClientID = "oms-event-generator"
+	kafkaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
+	kafkaConfig.Producer.Return.Successes = true
+	kafkaConfig.Consumer.Return.Errors = true
+
+	return kafkaConfig
+}

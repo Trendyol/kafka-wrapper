@@ -3,11 +3,8 @@ package test_utils
 import (
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
-	"github.com/durmaze/gobank"
-	"github.com/durmaze/gobank/responses"
 	. "github.com/onsi/ginkgo"
 	"github.com/parnurzeal/gorequest"
-	"net/http"
 	"sync"
 	"time"
 )
@@ -45,7 +42,6 @@ var AfterAll = func(afterAllFunc func()) {
 	})
 }
 
-
 func WaitUntil(predicate func() bool, timeout time.Duration, interval time.Duration) bool {
 	var totalWait time.Duration
 
@@ -58,13 +54,8 @@ func WaitUntil(predicate func() bool, timeout time.Duration, interval time.Durat
 }
 
 func Consume(kafkaConfig kafka_wrapper.ConnectionParameters) (string, string, []*sarama.RecordHeader) {
-	v, _ := sarama.ParseKafkaVersion(kafkaConfig.Version)
 
-	config := sarama.NewConfig()
-	config.Version = v
-	config.Consumer.Return.Errors = true
-
-	master, err := sarama.NewConsumer([]string{kafkaConfig.Brokers}, config)
+	master, err := sarama.NewConsumer([]string{kafkaConfig.Brokers}, kafkaConfig.Conf)
 	if err != nil {
 		panic(err)
 	}
@@ -75,24 +66,11 @@ func Consume(kafkaConfig kafka_wrapper.ConnectionParameters) (string, string, []
 		}
 	}()
 
-	partitions, _ := master.Partitions(kafkaConfig.Topic[0])
-	partitionConsumer, err := master.ConsumePartition(kafkaConfig.Topic[0], partitions[0], sarama.OffsetOldest)
+	partitions, _ := master.Partitions(kafkaConfig.Topics[0])
+	partitionConsumer, err := master.ConsumePartition(kafkaConfig.Topics[0], partitions[0], sarama.OffsetOldest)
 	if err != nil {
 		panic(err)
 	}
 	msg := <-partitionConsumer.Messages()
 	return string(msg.Key), string(msg.Value), msg.Headers
-}
-
-
-// add match-all stub to return 404 for unmatched cases. Default behavior of Mountebank is to return 200 OK.
-func NotFoundStub() gobank.StubElement {
-	return gobank.Stub().
-		Responses(responses.
-			Is().
-			StatusCode(http.StatusNotFound).
-			Header("Content-Type", "application/json").
-			Header("X-Mountebank-Catch-All", "Matched").
-			Build()).
-		Build()
 }

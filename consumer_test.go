@@ -6,19 +6,17 @@ import (
 	"github.com/Trendyol/kafka-wrapper/test_utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"time"
 )
 
 var _ = Describe("When consuming a message", func() {
 	Context("and the broker is reachable", func() {
 		var (
 			conf = kafka_wrapper.ConnectionParameters{
-				Version:         "2.2.0",
 				ConsumerGroupID: "consumerGroup",
-				ClientID:        "oms-event-generator",
-				Topic:           []string{"testtopic"},
+				Topics:          []string{"testtopic"},
 				RetryTopic:      "testtopic_RETRY",
 				ErrorTopic:      "testtopic_ERROR",
-				FromBeginning:   true,
 			}
 			expectedMessage   = "test"
 			messageChn        = make(chan string, 1)
@@ -28,11 +26,14 @@ var _ = Describe("When consuming a message", func() {
 
 		test_utils.BeforeAll(func() {
 			conf.Brokers = KafkaContainer.Address()
+			conf.Conf = configuration("2.2.0")
+
+			time.Sleep(5 * time.Second)
 			testProducer, err := kafka_wrapper.NewProducer(conf)
 			Expect(err).NotTo(HaveOccurred())
 			_, _, err = testProducer.SendMessage(&sarama.ProducerMessage{
 				Value: sarama.StringEncoder(expectedMessage),
-				Topic: conf.Topic[0],
+				Topic: conf.Topics[0],
 			})
 			Expect(err).NotTo(HaveOccurred())
 			testConsumer, err := kafka_wrapper.NewConsumer(conf)
@@ -53,12 +54,11 @@ var _ = Describe("When consuming a message", func() {
 	Context("and the broker is unreachable", func() {
 		var (
 			wrongConf = kafka_wrapper.ConnectionParameters{
-				Version:    "2.2.0",
+				Conf:       sarama.NewConfig(),
 				Brokers:    "localhost:9093",
-				Topic:      []string{"createClaim2"},
+				Topics:     []string{"createClaim2"},
 				RetryTopic: "createClaim2_RETRY",
 				ErrorTopic: "createClaim2_ERROR",
-				ClientID:   "1234",
 			}
 			expectedError error
 		)
@@ -69,10 +69,6 @@ var _ = Describe("When consuming a message", func() {
 
 		It("should produce an error", func() {
 			Expect(expectedError).To(HaveOccurred())
-		})
-
-		It("should produce the expected error", func() {
-			Expect(expectedError.Error()).Should(Equal("kafka: client has run out of available brokers to talk to (Is your cluster reachable?)"))
 		})
 	})
 })

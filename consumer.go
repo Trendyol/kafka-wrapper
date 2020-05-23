@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/Shopify/sarama"
 	"strings"
-	"time"
 )
 
 type Consumer interface {
@@ -26,28 +25,13 @@ type kafkaConsumer struct {
 }
 
 func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
-	v, err := sarama.ParseKafkaVersion(connectionParams.Version)
-	if err != nil {
-		return nil, err
-	}
-
-	config := sarama.NewConfig()
-	config.Version = v
-	config.Consumer.Return.Errors = true
-	config.ClientID = connectionParams.ClientID
-	if connectionParams.FromBeginning {
-		config.Consumer.Offsets.Initial = sarama.OffsetOldest
-	}
-	config.Metadata.Retry.Max = 1
-	config.Metadata.Retry.Backoff = 5 * time.Second
-
-	cg, err := sarama.NewConsumerGroup(strings.Split(connectionParams.Brokers, ","), connectionParams.ConsumerGroupID, config)
+	cg, err := sarama.NewConsumerGroup(strings.Split(connectionParams.Brokers, ","), connectionParams.ConsumerGroupID, connectionParams.Conf)
 	if err != nil {
 		return nil, err
 	}
 
 	return &kafkaConsumer{
-		topic:         connectionParams.Topic,
+		topic:         connectionParams.Topics,
 		retryTopic:    connectionParams.RetryTopic,
 		errorTopic:    connectionParams.ErrorTopic,
 		consumerGroup: cg,
@@ -72,13 +56,13 @@ func (c *kafkaConsumer) Subscribe(handler EventHandler) {
 		for {
 			if err := c.consumerGroup.Consume(ctx, topics(), handler);
 				err != nil {
-					Logger.Println("Error from consumer : ", err.Error())
-				return
+				Logger.Println("Error from consumer : ", err.Error())
+				panic(err)
 			}
 
 			if ctx.Err() != nil {
 				Logger.Println("Error from consumer : ", ctx.Err().Error())
-				return
+				panic(ctx.Err().Error())
 			}
 		}
 	}()
