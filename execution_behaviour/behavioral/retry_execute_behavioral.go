@@ -30,7 +30,17 @@ func RetryBehavioral(producer sarama.SyncProducer, errorTopic string, executor L
 func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMessage) (err error) {
 
 	for i := 0; i < k.retryCount; i++ {
-		time.Sleep(5 * time.Second)
+		if i == 0 {
+			latestExecutableTime := time.Now().Add(time.Duration(-5) * time.Second)
+			if latestExecutableTime.After(message.Timestamp) {
+				sleepTime := latestExecutableTime.Sub(message.Timestamp)
+				kafka_wrapper.Logger.Printf("System will sleep for %+v\n", sleepTime)
+				time.Sleep(sleepTime)
+			}
+		} else {
+			time.Sleep(100 * time.Millisecond)
+		}
+
 		err = k.executor.Operate(ctx, message)
 		if err == nil {
 			kafka_wrapper.Logger.Printf("Message is executed successfully, message: %+v\n", string(message.Value))
