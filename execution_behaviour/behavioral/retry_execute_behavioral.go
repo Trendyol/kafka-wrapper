@@ -33,11 +33,13 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 	for i := 0; i < k.retryCount; i++ {
 		if i == 0 {
 			latestExecutableTime := time.Now().Add(time.Duration(-5) * time.Second)
-			if latestExecutableTime.After(message.Timestamp) {
-				sleepTime := latestExecutableTime.Sub(message.Timestamp)
+			if latestExecutableTime.Before(message.Timestamp) {
+				sleepTime := message.Timestamp.Sub(latestExecutableTime)
 				kafka_wrapper.Logger.Printf("System will sleep for %+v\n", sleepTime)
 				fmt.Printf("System will sleep for %+v\n", sleepTime)
 				time.Sleep(sleepTime)
+			} else {
+				fmt.Printf("No need to sleep for message time %+v\n", message.Timestamp)
 			}
 		} else {
 			time.Sleep(100 * time.Millisecond)
