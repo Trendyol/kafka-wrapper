@@ -42,7 +42,7 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 				fmt.Printf("No need to sleep for message time %+v\n", message.Timestamp)
 			}
 		} else {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(250 * time.Millisecond)
 		}
 
 		err = k.executor.Operate(ctx, message)
