@@ -2,6 +2,7 @@ package behavioral
 
 import (
 	"context"
+	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
 	"strconv"
@@ -35,6 +36,7 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 			if latestExecutableTime.After(message.Timestamp) {
 				sleepTime := latestExecutableTime.Sub(message.Timestamp)
 				kafka_wrapper.Logger.Printf("System will sleep for %+v\n", sleepTime)
+				fmt.Printf("System will sleep for %+v\n", sleepTime)
 				time.Sleep(sleepTime)
 			}
 		} else {
