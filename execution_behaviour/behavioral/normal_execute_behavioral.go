@@ -34,6 +34,7 @@ func (k *normalBehaviour) Process(ctx context.Context, message *sarama.ConsumerM
 func (k *normalBehaviour) sendToRetryTopic(message *sarama.ConsumerMessage) error {
 	_, _, err := k.producer.SendMessage(&sarama.ProducerMessage{
 		Topic: k.retryTopic,
+		Key:   sarama.StringEncoder(message.Key),
 		Value: sarama.StringEncoder(message.Value),
 	})
 	return err

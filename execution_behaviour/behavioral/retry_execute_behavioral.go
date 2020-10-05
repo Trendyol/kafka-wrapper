@@ -76,6 +76,7 @@ func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, error
 				Value: []byte(strconv.Itoa(retryCount)),
 			},
 		},
+		Key:   sarama.StringEncoder(message.Key),
 		Topic: errorTopic,
 		Value: sarama.StringEncoder(message.Value),
 	})
