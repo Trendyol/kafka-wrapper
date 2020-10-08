@@ -56,9 +56,11 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 		err = k.sendToErrorTopic(message, k.errorTopic, err.Error())
 		if err != nil {
 			kafka_wrapper.Logger.Printf("Message is not published to error topic: %+v\n", k.errorTopic)
+			return err
 		}
 	}
-	return err
+
+	return nil
 }
 
 func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, errorTopic string, errorMessage string) error {
