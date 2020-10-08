@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
-	"strconv"
 	"time"
 )
 
@@ -63,37 +62,29 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 }
 
 func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, errorTopic string, errorMessage string) error {
-	retryCount := getRetryCountFromHeader(message)
-	retryCount++
 	_, _, err := k.producer.SendMessage(&sarama.ProducerMessage{
-		Headers: []sarama.RecordHeader{
-			{
-				Key:   []byte(ErrorKey),
-				Value: []byte(errorMessage),
-			},
-			{
-				Key:   []byte(RetryKey),
-				Value: []byte(strconv.Itoa(retryCount)),
-			},
-		},
-		Key:   sarama.StringEncoder(message.Key),
-		Topic: errorTopic,
-		Value: sarama.StringEncoder(message.Value),
+		Headers: prepareHeadersWithErrorMessage(message, errorMessage),
+		Key:     sarama.StringEncoder(message.Key),
+		Topic:   errorTopic,
+		Value:   sarama.StringEncoder(message.Value),
 	})
 	return err
 }
 
-func getRetryCountFromHeader(message *sarama.ConsumerMessage) int {
-	for _, header := range message.Headers {
-		if string(header.Key) == RetryKey {
-			return getInt(header.Value)
-		}
-	}
-	return 0
-}
+func prepareHeadersWithErrorMessage(message *sarama.ConsumerMessage, errorMessage string) []sarama.RecordHeader {
+	headers := make([]sarama.RecordHeader, 0)
 
-func getInt(s []byte) int {
-	retryCountString := string(s)
-	retryCount, _ := strconv.Atoi(retryCountString)
-	return retryCount
+	for i := 0; i < len(message.Headers); i++ {
+		if string(message.Headers[i].Key) == ErrorKey {
+			continue
+		}
+		headers = append(headers, *message.Headers[i])
+	}
+
+	headers = append(headers, sarama.RecordHeader{
+		Key:   []byte(ErrorKey),
+		Value: []byte(errorMessage),
+	})
+
+	return headers
 }
