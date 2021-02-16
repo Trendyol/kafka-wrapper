@@ -39,7 +39,7 @@ func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
 }
 
 func (c *kafkaConsumer) Subscribe(handler EventHandler) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	topics := func() []string {
 		result := make([]string, 0)
 		if c.errorTopic != "" {
@@ -71,7 +71,17 @@ func (c *kafkaConsumer) Subscribe(handler EventHandler) {
 			Logger.Println("Error from consumer group : ", err.Error())
 		}
 	}()
-	Logger.Printf("Kafka  consumer listens topic : %v \n", c.topic)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				Logger.Println("terminating: context cancelled")
+				cancel()
+			}
+		}
+	}()
+	Logger.Printf("Kafka consumer listens topic : %v \n", c.topic)
 }
 
 func (c *kafkaConsumer) Unsubscribe() {
