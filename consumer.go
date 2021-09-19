@@ -54,18 +54,16 @@ func (c *kafkaConsumer) Subscribe(handler EventHandler) {
 
 	go func() {
 		for {
-			if err := c.consumerGroup.Consume(ctx, topics(), handler);
-				err != nil {
-				Logger.Println("Error from consumer : ", err.Error())
-				panic(err)
+			if err := c.consumerGroup.Consume(ctx, topics(), handler); err != nil {
+				Logger.Panicf("Error from consumer : ", err.Error())
 			}
 
 			if ctx.Err() != nil {
-				Logger.Println("Error from consumer : ", ctx.Err().Error())
-				panic(ctx.Err().Error())
+				Logger.Panicf("Error from consumer : ", ctx.Err().Error())
 			}
 		}
 	}()
+
 	go func() {
 		for err := range c.consumerGroup.Errors() {
 			Logger.Println("Error from consumer group : ", err.Error())
