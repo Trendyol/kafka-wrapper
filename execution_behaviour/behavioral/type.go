@@ -2,6 +2,7 @@ package behavioral
 
 import (
 	"context"
+
 	"github.com/Shopify/sarama"
 )
 

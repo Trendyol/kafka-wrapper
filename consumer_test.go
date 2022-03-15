@@ -1,12 +1,13 @@
 package kafka_wrapper_test
 
 import (
+	"time"
+
 	"github.com/Shopify/sarama"
-	"github.com/Trendyol/kafka-wrapper"
+	kafka_wrapper "github.com/Trendyol/kafka-wrapper"
 	"github.com/Trendyol/kafka-wrapper/test_utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"time"
 )
 
 var _ = Describe("When consuming a message", func() {

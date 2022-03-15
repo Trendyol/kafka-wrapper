@@ -2,10 +2,11 @@ package kafka
 
 import (
 	"context"
+	"runtime"
+
 	. "github.com/onsi/gomega"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"runtime"
 )
 
 type Container struct {

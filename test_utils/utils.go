@@ -1,12 +1,13 @@
 package test_utils
 
 import (
-	"github.com/Shopify/sarama"
-	"github.com/Trendyol/kafka-wrapper"
-	. "github.com/onsi/ginkgo"
-	"github.com/parnurzeal/gorequest"
 	"sync"
 	"time"
+
+	"github.com/Shopify/sarama"
+	kafka_wrapper "github.com/Trendyol/kafka-wrapper"
+	. "github.com/onsi/ginkgo"
+	"github.com/parnurzeal/gorequest"
 )
 
 var WaitUntilApiUp = func(apiUrl string) {

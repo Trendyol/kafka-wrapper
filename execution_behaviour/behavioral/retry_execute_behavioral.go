@@ -3,9 +3,10 @@ package behavioral
 import (
 	"context"
 	"fmt"
-	"github.com/Shopify/sarama"
-	"github.com/Trendyol/kafka-wrapper"
 	"time"
+
+	"github.com/Shopify/sarama"
+	kafka_wrapper "github.com/Trendyol/kafka-wrapper"
 )
 
 const ErrorKey = "ErrorMessage"
@@ -52,7 +53,7 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 	}
 
 	if err != nil {
-		kafka_wrapper.Logger.Printf("Message is not executed successfully: %+v so is routing to error topic: %+v, message: %+v\n", message.Topic, k.errorTopic)
+		kafka_wrapper.Logger.Printf("Message is not executed successfully: %+v so is routing to error topic: %+v, message: %+v\n", message.Topic, k.errorTopic, message)
 		err = k.sendToErrorTopic(message, k.errorTopic, err.Error())
 		if err != nil {
 			kafka_wrapper.Logger.Printf("Message is not published to error topic: %+v\n", k.errorTopic)

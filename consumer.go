@@ -2,8 +2,9 @@ package kafka_wrapper
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
 	"strings"
+
+	"github.com/Shopify/sarama"
 )
 
 type Consumer interface {
@@ -55,11 +56,11 @@ func (c *kafkaConsumer) Subscribe(handler EventHandler) {
 	go func() {
 		for {
 			if err := c.consumerGroup.Consume(ctx, topics(), handler); err != nil {
-				Logger.Panicf("Error from consumer : ", err.Error())
+				Logger.Panicf("Error from consumer : %v", err.Error())
 			}
 
 			if ctx.Err() != nil {
-				Logger.Panicf("Error from consumer : ", ctx.Err().Error())
+				Logger.Panicf("Error from consumer : %v", ctx.Err().Error())
 			}
 		}
 	}()
