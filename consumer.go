@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
+
 	"github.com/Shopify/sarama"
 )
 
@@ -40,6 +42,9 @@ func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
 }
 
 func (c *kafkaConsumer) Subscribe(handler EventHandler) {
+	// Wrap instrumentation
+	wrappedHandler := otelsarama.WrapConsumerGroupHandler(handler)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	topics := func() []string {
 		result := make([]string, 0)
@@ -55,7 +60,7 @@ func (c *kafkaConsumer) Subscribe(handler EventHandler) {
 
 	go func() {
 		for {
-			if err := c.consumerGroup.Consume(ctx, topics(), handler); err != nil {
+			if err := c.consumerGroup.Consume(ctx, topics(), wrappedHandler); err != nil {
 				Logger.Panicf("Error from consumer : %v", err.Error())
 			}
 
