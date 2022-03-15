@@ -1,15 +1,19 @@
 package kafka_wrapper
 
 import (
+	"go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama"
+
 	"github.com/Shopify/sarama"
 	"strings"
 )
 
 func NewProducer(connectionParams ConnectionParameters) (sarama.SyncProducer, error) {
-	syncProducer, err := sarama.NewSyncProducer(strings.Split(connectionParams.Brokers, ","), connectionParams.Conf)
+	saramaConfig := connectionParams.Conf
+	producer, err := sarama.NewSyncProducer(strings.Split(connectionParams.Brokers, ","), saramaConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return syncProducer, err
+	producer = otelsarama.WrapSyncProducer(saramaConfig, producer)
+	return producer, nil
 }
