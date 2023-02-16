@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/Shopify/sarama"
-	"github.com/Trendyol/kafka-wrapper"
 	"time"
 )
 
@@ -34,7 +33,6 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 			latestExecutableTime := time.Now().Add(time.Duration(-5) * time.Second)
 			if latestExecutableTime.Before(message.Timestamp) {
 				sleepTime := message.Timestamp.Sub(latestExecutableTime)
-				kafka_wrapper.Logger.Printf("System will sleep for %+v\n", sleepTime)
 				fmt.Printf("System will sleep for %+v\n", sleepTime)
 				time.Sleep(sleepTime)
 			} else {
@@ -46,16 +44,16 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 
 		err = k.executor.Operate(ctx, message)
 		if err == nil {
-			kafka_wrapper.Logger.Printf("Message is executed successfully, message: %+v\n", string(message.Value))
+			fmt.Printf("Message is executed successfully, message: %+v\n", string(message.Value))
 			break
 		}
 	}
 
 	if err != nil {
-		kafka_wrapper.Logger.Printf("Message is not executed successfully: %+v so is routing to error topic: %+v, message: %+v\n", message.Topic, k.errorTopic)
+		fmt.Printf("Message is not executed successfully: %+v so is routing to error topic: %+v \n", message.Topic, k.errorTopic)
 		err = k.sendToErrorTopic(message, k.errorTopic, err.Error())
 		if err != nil {
-			kafka_wrapper.Logger.Printf("Message is not published to error topic: %+v\n", k.errorTopic)
+			fmt.Printf("Message is not published to error topic: %+v\n", k.errorTopic)
 			return err
 		}
 	}

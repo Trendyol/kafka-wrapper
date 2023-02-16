@@ -2,25 +2,17 @@ package kafka_wrapper
 
 import (
 	"context"
+	"fmt"
 	"github.com/Shopify/sarama"
 	"strings"
 )
 
 type Consumer interface {
-	Subscribe(handler EventHandler)
+	Subscribe(topicParams []TopicsParameters, handler EventHandler)
 	Unsubscribe()
 }
 
-type EventHandler interface {
-	Setup(sarama.ConsumerGroupSession) error
-	Cleanup(sarama.ConsumerGroupSession) error
-	ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error
-}
-
 type kafkaConsumer struct {
-	topic         []string
-	retryTopic    string
-	errorTopic    string
 	consumerGroup sarama.ConsumerGroup
 }
 
@@ -31,42 +23,28 @@ func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
 	}
 
 	return &kafkaConsumer{
-		topic:         connectionParams.Topics,
-		retryTopic:    connectionParams.RetryTopic,
-		errorTopic:    connectionParams.ErrorTopic,
 		consumerGroup: cg,
 	}, nil
 }
 
-func (c *kafkaConsumer) Subscribe(handler EventHandler) {
+func (c *kafkaConsumer) Subscribe(topicParams []TopicsParameters, handler EventHandler) {
 	ctx, cancel := context.WithCancel(context.Background())
-	topics := func() []string {
-		result := make([]string, 0)
-		if c.errorTopic != "" {
-			result = append(result, c.errorTopic)
-		}
-		if c.retryTopic != "" {
-			result = append(result, c.retryTopic)
-		}
-		result = append(result, c.topic...)
-		return result
-	}
 
 	go func() {
 		for {
-			if err := c.consumerGroup.Consume(ctx, topics(), handler); err != nil {
-				Logger.Panicf("Error from consumer : ", err.Error())
+			if err := c.consumerGroup.Consume(ctx, JoinAllTopics(topicParams), handler); err != nil {
+				fmt.Printf("Error from consumer: %+v \n", err.Error())
 			}
 
 			if ctx.Err() != nil {
-				Logger.Panicf("Error from consumer : ", ctx.Err().Error())
+				fmt.Printf("Error from consumer: %+v \n", ctx.Err().Error())
 			}
 		}
 	}()
 
 	go func() {
 		for err := range c.consumerGroup.Errors() {
-			Logger.Println("Error from consumer group : ", err.Error())
+			fmt.Printf("Error from consumer group: %+v \n", err.Error())
 		}
 	}()
 
@@ -74,17 +52,17 @@ func (c *kafkaConsumer) Subscribe(handler EventHandler) {
 		for {
 			select {
 			case <-ctx.Done():
-				Logger.Println("terminating: context cancelled")
+				fmt.Println("terminating: context cancelled")
 				cancel()
 			}
 		}
 	}()
-	Logger.Printf("Kafka consumer listens topic : %v \n", c.topic)
+	fmt.Printf("Kafka consumer listens topic : %+v \n", topicParams)
 }
 
 func (c *kafkaConsumer) Unsubscribe() {
 	if err := c.consumerGroup.Close(); err != nil {
-		Logger.Printf("Client wasn't closed :%+v", err)
+		fmt.Printf("Client wasn't closed: %+v \n", err)
 	}
-	Logger.Println("Kafka consumer closed")
+	fmt.Println("Kafka consumer closed")
 }
