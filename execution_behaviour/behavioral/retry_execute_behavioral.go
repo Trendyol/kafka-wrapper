@@ -8,7 +8,7 @@ import (
 )
 
 const ErrorKey = "ErrorMessage"
-const RetryKey = "RetryCount"
+const RetryErrorKey = "RetryErrorMessage"
 
 type retryBehaviour struct {
 	producer   sarama.SyncProducer
