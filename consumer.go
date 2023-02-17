@@ -9,6 +9,7 @@ import (
 
 type Consumer interface {
 	Subscribe(topicParams []TopicsParameters, handler EventHandler)
+	SubscribeToTopic(topicParams TopicsParameters, handler EventHandler)
 	Unsubscribe()
 }
 
@@ -25,6 +26,10 @@ func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
 	return &kafkaConsumer{
 		consumerGroup: cg,
 	}, nil
+}
+
+func (c *kafkaConsumer) SubscribeToTopic(topicParams TopicsParameters, handler EventHandler) {
+	c.Subscribe([]TopicsParameters{topicParams}, handler)
 }
 
 func (c *kafkaConsumer) Subscribe(topicParams []TopicsParameters, handler EventHandler) {
