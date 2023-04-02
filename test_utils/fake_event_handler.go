@@ -5,7 +5,7 @@ import (
 	"github.com/Trendyol/kafka-wrapper"
 )
 
-func NewEventHandler(message chan string) kafka_wrapper.EventHandler {
+func NewEventHandler(message chan string) kafka_wrapper.KafkaMessageHandler {
 	return &testEventHandler{
 		message:              message,
 		subscriptionStatusCh: make(chan bool),

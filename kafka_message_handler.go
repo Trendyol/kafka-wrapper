@@ -4,7 +4,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-type EventHandler interface {
+type KafkaMessageHandler interface {
 	Setup(sarama.ConsumerGroupSession) error
 	Cleanup(sarama.ConsumerGroupSession) error
 	ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error

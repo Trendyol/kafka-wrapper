@@ -8,8 +8,8 @@ import (
 )
 
 type Consumer interface {
-	Subscribe(topicParams []TopicsParameters, handler EventHandler)
-	SubscribeToTopic(topicParams TopicsParameters, handler EventHandler)
+	Subscribe(topicParams []TopicsParameters, handler KafkaMessageHandler)
+	SubscribeToTopic(topicParams TopicsParameters, handler KafkaMessageHandler)
 	Unsubscribe()
 }
 
@@ -28,11 +28,11 @@ func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
 	}, nil
 }
 
-func (c *kafkaConsumer) SubscribeToTopic(topicParams TopicsParameters, handler EventHandler) {
+func (c *kafkaConsumer) SubscribeToTopic(topicParams TopicsParameters, handler KafkaMessageHandler) {
 	c.Subscribe([]TopicsParameters{topicParams}, handler)
 }
 
-func (c *kafkaConsumer) Subscribe(topicParams []TopicsParameters, handler EventHandler) {
+func (c *kafkaConsumer) Subscribe(topicParams []TopicsParameters, handler KafkaMessageHandler) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
