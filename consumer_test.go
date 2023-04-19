@@ -3,10 +3,30 @@ package kafka_wrapper_test
 import (
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
+	"github.com/Trendyol/kafka-wrapper/mocks"
 	"github.com/Trendyol/kafka-wrapper/test_utils"
+	"github.com/golang/mock/gomock"
 	testifyAssert "github.com/stretchr/testify/assert"
 	"time"
 )
+
+func (s *testKafkaSuite) Test_consumer_should_manipulate_the_given_metadata_configuration() {
+	// Given
+	var (
+		connectionParams = kafka_wrapper.ConnectionParameters{
+			ConsumerGroupID: "consumer-group",
+		}
+		ctrl            = gomock.NewController(s.T())
+		manipulatorMock = mocks.NewMockConfigurationManipulation(ctrl)
+	)
+
+	connectionParams.Brokers = s.Wrapper.GetBrokerAddress()
+	connectionParams.Conf = test_utils.CreateBasicConf()
+
+	manipulatorMock.EXPECT().ManipulateMetadataRetrieval(connectionParams.Conf).Times(1).Return(connectionParams.Conf)
+
+	kafka_wrapper.NewConsumer(manipulatorMock, connectionParams)
+}
 
 func (s *testKafkaSuite) Test_consume_when_broker_is_reachable() {
 	// Given
@@ -24,20 +44,24 @@ func (s *testKafkaSuite) Test_consume_when_broker_is_reachable() {
 		expectedMessage = "test"
 		messageChn      = make(chan string, 1)
 		receivedMessage string
+		ctrl            = gomock.NewController(s.T())
+		manipulatorMock = mocks.NewMockConfigurationManipulation(ctrl)
 	)
 
 	connectionParams.Brokers = s.Wrapper.GetBrokerAddress()
 	connectionParams.Conf = test_utils.CreateBasicConf()
+	manipulatorMock.EXPECT().ManipulateMetadataRetrieval(connectionParams.Conf).Times(2).Return(connectionParams.Conf)
 
 	time.Sleep(5 * time.Second)
-	testProducer, _ := kafka_wrapper.NewProducer(connectionParams)
+
+	testProducer, _ := kafka_wrapper.NewProducer(manipulatorMock, connectionParams)
 
 	// When
 	_, _, _ = testProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage),
 		Topic: topicParams.Topic,
 	})
-	testConsumer, _ := kafka_wrapper.NewConsumer(connectionParams)
+	testConsumer, _ := kafka_wrapper.NewConsumer(manipulatorMock, connectionParams)
 	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
 	receivedMessage = <-messageChn
 
@@ -70,18 +94,23 @@ func (s *testKafkaSuite) Test_consume_multiple_topic_when_broker_is_reachable() 
 		receivedMessage2 string
 
 		messageChn = make(chan string, 1)
+
+		ctrl            = gomock.NewController(s.T())
+		manipulatorMock = mocks.NewMockConfigurationManipulation(ctrl)
 	)
 
 	connectionParams.Brokers = s.Wrapper.GetBrokerAddress()
 	connectionParams.Conf = test_utils.CreateBasicConf()
 
-	time.Sleep(5 * time.Second)
-	testProducer, _ := kafka_wrapper.NewProducer(connectionParams)
-
 	topics := kafka_wrapper.FromTopics(testTopic1Params, testTopic2Params)
 
+	manipulatorMock.EXPECT().ManipulateMetadataRetrieval(connectionParams.Conf).Times(2).Return(connectionParams.Conf)
+
+	time.Sleep(5 * time.Second)
+	testProducer, _ := kafka_wrapper.NewProducer(manipulatorMock, connectionParams)
+
 	// When && Then
-	testConsumer, _ := kafka_wrapper.NewConsumer(connectionParams)
+	testConsumer, _ := kafka_wrapper.NewConsumer(manipulatorMock, connectionParams)
 	testConsumer.Subscribe(topics, test_utils.NewEventHandler(messageChn))
 
 	_, _, _ = testProducer.SendMessage(&sarama.ProducerMessage{
@@ -111,10 +140,13 @@ func (s *testKafkaSuite) Test_not_consume_when_broker_is_not_reachable() {
 			Brokers: "localhost:9093",
 		}
 		expectedError error
-	)
 
+		ctrl            = gomock.NewController(s.T())
+		manipulatorMock = mocks.NewMockConfigurationManipulation(ctrl)
+	)
+	manipulatorMock.EXPECT().ManipulateMetadataRetrieval(wrongConf.Conf).Times(1).Return(wrongConf.Conf)
 	// When
-	_, expectedError = kafka_wrapper.NewConsumer(wrongConf)
+	_, expectedError = kafka_wrapper.NewConsumer(manipulatorMock, wrongConf)
 
 	// Then
 	assert.NotNil(expectedError)
