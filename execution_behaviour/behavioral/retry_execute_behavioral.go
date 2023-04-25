@@ -50,10 +50,10 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 	}
 
 	if err != nil {
-		fmt.Printf("Message is not executed successfully: %+v so is routing to error topic: %+v \n", message.Topic, k.errorTopic)
+		fmt.Printf("Message is not executed successfully: %+v so routing it to the error topic: %+v \n", message.Topic, k.errorTopic)
 		err = k.sendToErrorTopic(message, k.errorTopic, err.Error())
 		if err != nil {
-			fmt.Printf("Message is not published to error topic: %+v\n", k.errorTopic)
+			fmt.Printf("Message is not published to the error topic: %+v\n", k.errorTopic)
 			return err
 		}
 	}

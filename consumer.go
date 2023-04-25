@@ -17,9 +17,7 @@ type kafkaConsumer struct {
 	consumerGroup sarama.ConsumerGroup
 }
 
-func NewConsumer(configManipulator ConfigurationManipulation, connectionParams ConnectionParameters) (Consumer, error) {
-	connectionParams.Conf = configManipulator.ManipulateMetadataRetrieval(connectionParams.Conf)
-
+func NewConsumer(connectionParams ConnectionParameters) (Consumer, error) {
 	cg, err := sarama.NewConsumerGroup(strings.Split(connectionParams.Brokers, ","), connectionParams.ConsumerGroupID, connectionParams.Conf)
 	if err != nil {
 		return nil, err

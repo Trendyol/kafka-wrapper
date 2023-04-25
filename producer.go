@@ -5,9 +5,7 @@ import (
 	"strings"
 )
 
-func NewProducer(configManipulator ConfigurationManipulation, connectionParams ConnectionParameters) (sarama.SyncProducer, error) {
-	connectionParams.Conf = configManipulator.ManipulateMetadataRetrieval(connectionParams.Conf)
-
+func NewProducer(connectionParams ConnectionParameters) (sarama.SyncProducer, error) {
 	syncProducer, err := sarama.NewSyncProducer(strings.Split(connectionParams.Brokers, ","), connectionParams.Conf)
 	if err != nil {
 		return nil, err
