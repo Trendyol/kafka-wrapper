@@ -4,25 +4,29 @@ import (
 	"context"
 	"fmt"
 	"github.com/Shopify/sarama"
+	"github.com/Trendyol/kafka-wrapper/utils"
 	"time"
 )
 
 const ErrorKey = "ErrorMessage"
+const RetryTopicKey = "RetryTopic"
 const RetryErrorKey = "RetryErrorMessage"
 
 type retryBehaviour struct {
-	producer   sarama.SyncProducer
-	executor   LogicOperator
-	retryCount int
-	errorTopic string
+	producer       sarama.SyncProducer
+	executor       LogicOperator
+	retryCount     int
+	errorTopic     string
+	headerOperator utils.HeaderOperation
 }
 
-func RetryBehavioral(producer sarama.SyncProducer, errorTopic string, executor LogicOperator, retryCount int) BehaviourExecutor {
+func RetryBehavioral(producer sarama.SyncProducer, errorTopic string, executor LogicOperator, retryCount int, headerOperator utils.HeaderOperation) BehaviourExecutor {
 	return &retryBehaviour{
-		producer:   producer,
-		executor:   executor,
-		retryCount: retryCount,
-		errorTopic: errorTopic,
+		producer:       producer,
+		executor:       executor,
+		retryCount:     retryCount,
+		errorTopic:     errorTopic,
+		headerOperator: headerOperator,
 	}
 }
 
@@ -62,8 +66,11 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 }
 
 func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, errorTopic string, errorMessage string) error {
+
+	headers := k.updateCurrentHeaders(message, errorMessage)
+
 	_, _, err := k.producer.SendMessage(&sarama.ProducerMessage{
-		Headers: prepareHeadersWithErrorMessage(message, errorMessage),
+		Headers: headers,
 		Key:     sarama.StringEncoder(message.Key),
 		Topic:   errorTopic,
 		Value:   sarama.StringEncoder(message.Value),
@@ -71,20 +78,11 @@ func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, error
 	return err
 }
 
-func prepareHeadersWithErrorMessage(message *sarama.ConsumerMessage, errorMessage string) []sarama.RecordHeader {
-	headers := make([]sarama.RecordHeader, 0)
+func (k *retryBehaviour) updateCurrentHeaders(message *sarama.ConsumerMessage, errorMessage string) []sarama.RecordHeader {
 
-	for i := 0; i < len(message.Headers); i++ {
-		if string(message.Headers[i].Key) == ErrorKey {
-			continue
-		}
-		headers = append(headers, *message.Headers[i])
-	}
-
-	headers = append(headers, sarama.RecordHeader{
-		Key:   []byte(ErrorKey),
-		Value: []byte(errorMessage),
-	})
+	headers := k.headerOperator.ExtractHeader(message)
+	headers = k.headerOperator.AddIntoHeader(headers, ErrorKey, errorMessage)
+	headers = k.headerOperator.AddIntoHeader(headers, RetryTopicKey, message.Topic)
 
 	return headers
 }

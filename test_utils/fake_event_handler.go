@@ -3,6 +3,7 @@ package test_utils
 import (
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
+	"github.com/Trendyol/kafka-wrapper/execution_behaviour"
 )
 
 func NewEventHandler(message chan string) kafka_wrapper.EventHandler {
@@ -15,6 +16,11 @@ func NewEventHandler(message chan string) kafka_wrapper.EventHandler {
 type testEventHandler struct {
 	message              chan string
 	subscriptionStatusCh chan bool
+}
+
+func (ge *testEventHandler) BehavioralSelector() execution_behaviour.BehavioralSelector {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (ge *testEventHandler) Setup(sarama.ConsumerGroupSession) error {

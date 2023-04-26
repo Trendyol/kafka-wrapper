@@ -42,3 +42,12 @@ func (m *mockSyncProducer) AddMessageToTxn(msg *sarama.ConsumerMessage, groupId 
 func (m *mockSyncProducer) AddOffsetsToTxn(offsets map[string][]*sarama.PartitionOffsetMetadata, groupId string) error {
 	return nil
 }
+
+func (m *mockSyncProducer) GetHeaderOfMessage(headerName string) (string, error) {
+	for _, header := range m.Message.Headers {
+		if string(header.Key) == headerName {
+			return string(header.Value), nil
+		}
+	}
+	return "", errors.New("Header not found")
+}
