@@ -2,10 +2,10 @@ package test_utils
 
 import (
 	"github.com/Shopify/sarama"
-	"github.com/Trendyol/kafka-wrapper"
+	"github.com/Trendyol/kafka-wrapper/params"
 )
 
-func Consume(kafkaConfig kafka_wrapper.ConnectionParameters, topic string) (string, string, []*sarama.RecordHeader) {
+func Consume(kafkaConfig params.ConnectionParameters, topic string) (string, string, []*sarama.RecordHeader) {
 	master, err := sarama.NewConsumer([]string{kafkaConfig.Brokers}, kafkaConfig.Conf)
 	if err != nil {
 		panic(err)

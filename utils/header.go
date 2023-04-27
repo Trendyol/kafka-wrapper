@@ -17,22 +17,17 @@ func NewHeaderOperator() HeaderOperation {
 }
 
 func (h *headerOperator) AddIntoHeader(headers []sarama.RecordHeader, key, value string) []sarama.RecordHeader {
-	exist := false
-	for i := 0; i < len(headers); i++ {
-		if string(headers[i].Key) == key {
+	for i, header := range headers {
+		if string(header.Key) == key {
 			headers[i].Value = []byte(value)
-			exist = true
+			return headers
 		}
 	}
-
-	if !exist {
-		headers = append(headers, sarama.RecordHeader{
-			Key:   []byte(key),
-			Value: []byte(value),
-		})
+	newHeader := sarama.RecordHeader{
+		Key:   []byte(key),
+		Value: []byte(value),
 	}
-
-	return headers
+	return append(headers, newHeader)
 }
 
 func (h *headerOperator) ExtractHeader(message *sarama.ConsumerMessage) []sarama.RecordHeader {

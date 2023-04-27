@@ -3,6 +3,7 @@ package kafka_wrapper_test
 import (
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
+	"github.com/Trendyol/kafka-wrapper/params"
 	"github.com/Trendyol/kafka-wrapper/test_utils"
 	testifyAssert "github.com/stretchr/testify/assert"
 	"time"
@@ -13,10 +14,10 @@ func (s *testKafkaSuite) Test_consume_when_broker_is_reachable() {
 	var (
 		assert = testifyAssert.New(s.T())
 
-		connectionParams = kafka_wrapper.ConnectionParameters{
+		connectionParams = params.ConnectionParameters{
 			ConsumerGroupID: "consumer-group",
 		}
-		topicParams = kafka_wrapper.TopicsParameters{
+		topicParams = params.TopicsParameters{
 			Topic:      "test-topic",
 			RetryTopic: "test-topic_retry",
 			ErrorTopic: "test-topic_error",
@@ -51,15 +52,15 @@ func (s *testKafkaSuite) Test_consume_multiple_topic_when_broker_is_reachable() 
 	var (
 		assert = testifyAssert.New(s.T())
 
-		connectionParams = kafka_wrapper.ConnectionParameters{
+		connectionParams = params.ConnectionParameters{
 			ConsumerGroupID: "consumer-group",
 		}
-		testTopic1Params = kafka_wrapper.TopicsParameters{
+		testTopic1Params = params.TopicsParameters{
 			Topic:      "test-topic1",
 			RetryTopic: "test-topic1_retry",
 			ErrorTopic: "test-topic1_error",
 		}
-		testTopic2Params = kafka_wrapper.TopicsParameters{
+		testTopic2Params = params.TopicsParameters{
 			Topic:      "test-topic2",
 			RetryTopic: "test-topic2_retry",
 			ErrorTopic: "test-topic2_error",
@@ -76,7 +77,7 @@ func (s *testKafkaSuite) Test_consume_multiple_topic_when_broker_is_reachable() 
 	connectionParams.Brokers = s.Wrapper.GetBrokerAddress()
 	connectionParams.Conf = test_utils.CreateBasicConf()
 
-	topics := kafka_wrapper.FromTopics(testTopic1Params, testTopic2Params)
+	topics := params.FromTopics(testTopic1Params, testTopic2Params)
 
 	time.Sleep(5 * time.Second)
 	testProducer, _ := kafka_wrapper.NewProducer(connectionParams)
@@ -107,7 +108,7 @@ func (s *testKafkaSuite) Test_not_consume_when_broker_is_not_reachable() {
 	var (
 		assert = testifyAssert.New(s.T())
 
-		wrongConf = kafka_wrapper.ConnectionParameters{
+		wrongConf = params.ConnectionParameters{
 			Conf:    sarama.NewConfig(),
 			Brokers: "localhost:9093",
 		}

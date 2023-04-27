@@ -55,7 +55,7 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 
 	if err != nil {
 		fmt.Printf("Message is not executed successfully: %+v so routing it to the error topic: %+v \n", message.Topic, k.errorTopic)
-		err = k.sendToErrorTopic(message, k.errorTopic, err.Error())
+		err = k.sendToErrorTopic(message, err.Error())
 		if err != nil {
 			fmt.Printf("Message is not published to the error topic: %+v\n", k.errorTopic)
 			return err
@@ -65,14 +65,14 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 	return nil
 }
 
-func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, errorTopic string, errorMessage string) error {
+func (k *retryBehaviour) sendToErrorTopic(message *sarama.ConsumerMessage, errorMessage string) error {
 
 	headers := k.updateCurrentHeaders(message, errorMessage)
 
 	_, _, err := k.producer.SendMessage(&sarama.ProducerMessage{
 		Headers: headers,
 		Key:     sarama.StringEncoder(message.Key),
-		Topic:   errorTopic,
+		Topic:   k.errorTopic,
 		Value:   sarama.StringEncoder(message.Value),
 	})
 	return err

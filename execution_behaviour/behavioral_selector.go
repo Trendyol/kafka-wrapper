@@ -49,7 +49,7 @@ func NewRetryOnlyBehavioralSelector(normalOperator behavioral.LogicOperator, pro
 func (r *behaviourSelector) GetBehavioral(claim sarama.ConsumerGroupClaim) behavioral.BehaviourExecutor {
 	if claim.Topic() == r.retryTopic {
 		return behavioral.RetryBehavioral(r.producer, r.errorTopic, r.normalOperator, r.retryCount, r.headerOperator)
-	} else if claim.Topic() == r.errorTopic {
+	} else if r.errorOperator != nil && claim.Topic() == r.errorTopic {
 		return behavioral.ErrorBehavioral(r.errorOperator)
 	} else {
 		return behavioral.NormalBehavioral(r.producer, r.retryTopic, r.normalOperator)

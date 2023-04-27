@@ -3,6 +3,7 @@ package kafka_wrapper_test
 import (
 	"github.com/Shopify/sarama"
 	"github.com/Trendyol/kafka-wrapper"
+	"github.com/Trendyol/kafka-wrapper/params"
 	"github.com/Trendyol/kafka-wrapper/test_utils"
 	testifyAssert "github.com/stretchr/testify/assert"
 	"time"
@@ -14,7 +15,7 @@ func (s *testKafkaSuite) Test_produce_when_broker_is_reachable() {
 		assert = testifyAssert.New(s.T())
 
 		message          = "test"
-		connectionParams = kafka_wrapper.ConnectionParameters{ConsumerGroupID: "some-id"}
+		connectionParams = params.ConnectionParameters{ConsumerGroupID: "some-id"}
 		topic            = "some-topic"
 
 		receivedPayload string
@@ -46,7 +47,7 @@ func (s *testKafkaSuite) Test_not_produce_when_broker_is_not_reachable() {
 	var (
 		assert = testifyAssert.New(s.T())
 
-		wrongConf = kafka_wrapper.ConnectionParameters{ConsumerGroupID: "some-id"}
+		wrongConf = params.ConnectionParameters{ConsumerGroupID: "some-id"}
 
 		expectedError error
 	)
