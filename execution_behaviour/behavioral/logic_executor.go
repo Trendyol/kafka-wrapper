@@ -2,6 +2,7 @@ package behavioral
 
 import (
 	"context"
+
 	"github.com/Shopify/sarama"
 )
 
@@ -10,3 +11,13 @@ import (
 type LogicOperator interface {
 	Operate(ctx context.Context, message *sarama.ConsumerMessage) error
 }
+
+// LogicOperatorFunc functional implementation of the LogicOperator interface
+type LogicOperatorFunc func(ctx context.Context, message *sarama.ConsumerMessage) error
+
+func (fn LogicOperatorFunc) Operate(ctx context.Context, message *sarama.ConsumerMessage) error {
+	return fn(ctx, message)
+}
+
+// type-check
+var _ LogicOperator = (LogicOperatorFunc)(nil)
