@@ -13,6 +13,13 @@ func NewEventHandler(message chan string) kafka_wrapper.EventHandler {
 	}
 }
 
+func NewEventHandlerWithError(message chan string) kafka_wrapper.EventHandler {
+	return &testEventHandler{
+		message:              message,
+		subscriptionStatusCh: make(chan bool),
+	}
+}
+
 type testEventHandler struct {
 	message              chan string
 	subscriptionStatusCh chan bool

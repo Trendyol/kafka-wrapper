@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	RedpandaImage   = "docker.vectorized.io/vectorized/redpanda"
-	RedpandaVersion = "v21.8.1"
+	RedpandaImage   = "redpandadata/redpanda"
+	RedpandaVersion = "v24.1.3"
 )
 
 type TestContainerWrapper struct {
@@ -20,11 +20,11 @@ type TestContainerWrapper struct {
 	hostPort  int
 }
 
-func (t *TestContainerWrapper) RunContainer() error {
+func (t *TestContainerWrapper) RunContainer(portInfo string) error {
 	req := testcontainers.ContainerRequest{
 		Image: fmt.Sprintf("%s:%s", RedpandaImage, RedpandaVersion),
 		ExposedPorts: []string{
-			"9092:9092/tcp",
+			portInfo,
 		},
 		Cmd:        []string{"redpanda", "start"},
 		WaitingFor: wait.ForLog("Successfully started Redpanda!"),
