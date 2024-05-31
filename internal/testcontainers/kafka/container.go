@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
@@ -24,9 +25,13 @@ func (t *TestContainerWrapper) RunContainer(portInfo string) error {
 	req := testcontainers.ContainerRequest{
 		Image: fmt.Sprintf("%s:%s", RedpandaImage, RedpandaVersion),
 		ExposedPorts: []string{
-			portInfo,
+			portInfo + ":" + portInfo + "/tcp",
 		},
-		Cmd:        []string{"redpanda", "start"},
+		Cmd: []string{
+			"redpanda",
+			"start",
+			"--overprovisioned --smp 1 --memory 1G --reserve-memory 0M --check=false",
+		},
 		WaitingFor: wait.ForLog("Successfully started Redpanda!"),
 		AutoRemove: true,
 	}
@@ -34,12 +39,26 @@ func (t *TestContainerWrapper) RunContainer(portInfo string) error {
 	container, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
+		Reuse:            false,
 	})
 	if err != nil {
-		return fmt.Errorf("could not create container: %w", err)
+		log.Fatalf("could not create container: %v", err)
 	}
 
-	mPort, err := container.MappedPort(context.Background(), "9092")
+	// Container'ın loglarını almak için
+	logs, err := container.Logs(context.Background())
+	if err != nil {
+		log.Fatalf("could not get container logs: %v", err)
+	}
+
+	// Logları yazdır
+	log.Println("Container logs:")
+	_, err = fmt.Println(logs)
+	if err != nil {
+		log.Fatalf("could not write logs: %v", err)
+	}
+
+	mPort, err := container.MappedPort(context.Background(), nat.Port(portInfo))
 	if err != nil {
 		return fmt.Errorf("could not get mapped port from the container: %w", err)
 	}
@@ -47,6 +66,7 @@ func (t *TestContainerWrapper) RunContainer(portInfo string) error {
 	t.container = container
 	t.hostPort = mPort.Int()
 
+	log.Printf("Container %s is running on port: %d", "redpanda", t.hostPort)
 	return nil
 }
 

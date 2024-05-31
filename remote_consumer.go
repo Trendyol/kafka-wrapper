@@ -35,13 +35,27 @@ func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, h
 
 	go func() {
 		for {
-			if err := c.remoteConsumer.Consume(ctx, params.JoinSecondaryTopics(topicParams), handler); err != nil {
+
+			if err := c.remoteConsumer.Consume(ctx, params.JoinMainTopics(topicParams), handler); err != nil {
 				fmt.Printf("Error from consumer: %+v \n", err.Error())
 			}
 
-			if err := c.localConsumer.Consume(ctx, params.JoinMainTopics(topicParams), handler); err != nil {
+			fmt.Printf("Subscribed topics: %+v to remote kafka server %+v \n", params.JoinMainTopics(topicParams), c.remoteConsumer)
+
+			if ctx.Err() != nil {
+				fmt.Printf("Error from consumer: %+v \n", ctx.Err().Error())
+			}
+		}
+	}()
+
+	go func() {
+		for {
+
+			if err := c.localConsumer.Consume(ctx, params.JoinSecondaryTopics(topicParams), handler); err != nil {
 				fmt.Printf("Error from consumer: %+v \n", err.Error())
 			}
+
+			fmt.Printf("Subscribed topics: %+v to local kafka server \n", params.JoinSecondaryTopics(topicParams))
 
 			if ctx.Err() != nil {
 				fmt.Printf("Error from consumer: %+v \n", ctx.Err().Error())
