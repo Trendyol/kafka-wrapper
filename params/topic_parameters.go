@@ -1,5 +1,7 @@
 package params
 
+import "fmt"
+
 type TopicsParameters struct {
 	Topic                 string
 	ErrorTopic            string
@@ -23,6 +25,27 @@ func JoinAllTopics(topics []TopicsParameters) []string {
 	return allTopics
 }
 
+func JoinMainTopics(topics []TopicsParameters) []string {
+	allTopics := make([]string, 0)
+	for _, topic := range topics {
+		allTopics = append(allTopics, topic.Topic)
+	}
+	fmt.Printf("JoinMainTopics : %+v  \n", allTopics)
+
+	return allTopics
+}
+
+func JoinSecondaryTopics(topics []TopicsParameters) []string {
+
+	allTopics := make([]string, 0)
+	for _, topic := range topics {
+		allTopics = append(allTopics, topic.getSecondaryTopics()...)
+	}
+	fmt.Printf("JoinSecondaryTopics : %+v  \n", allTopics)
+
+	return allTopics
+}
+
 func (p TopicsParameters) getAllTopics() []string {
 	topics := make([]string, 0)
 	if p.ErrorTopic != "" && !p.UsingSharedErrorTopic {
@@ -32,5 +55,16 @@ func (p TopicsParameters) getAllTopics() []string {
 		topics = append(topics, p.RetryTopic)
 	}
 	topics = append(topics, p.Topic)
+	return topics
+}
+
+func (p TopicsParameters) getSecondaryTopics() []string {
+	topics := make([]string, 0)
+	if p.ErrorTopic != "" && !p.UsingSharedErrorTopic {
+		topics = append(topics, p.ErrorTopic)
+	}
+	if p.RetryTopic != "" {
+		topics = append(topics, p.RetryTopic)
+	}
 	return topics
 }

@@ -1,15 +1,16 @@
 package kafka_wrapper_test
 
 import (
-	"fmt"
 	"github.com/Trendyol/kafka-wrapper/internal/testcontainers/kafka"
 	"github.com/stretchr/testify/suite"
+	"log"
 	"testing"
 )
 
 type testKafkaSuite struct {
 	suite.Suite
-	Wrapper kafka.TestContainerWrapper
+	Wrapper       kafka.TestContainerWrapper
+	RemoteWrapper kafka.TestContainerWrapper
 }
 
 func TestKafka(t *testing.T) {
@@ -17,14 +18,23 @@ func TestKafka(t *testing.T) {
 }
 
 func (s *testKafkaSuite) SetupSuite() {
-	if err := s.Wrapper.RunContainer(); err != nil {
-		fmt.Printf("Error occurred while running container, err: %+v", err)
-		return
+
+	log.Println("Starting local container")
+	if err := s.Wrapper.RunContainer("9092"); err != nil {
+		log.Fatalf("Error occurred while running local container, err: %+v", err)
 	}
 
-	fmt.Printf("Container is running on address: %s \n", s.Wrapper.GetBrokerAddress())
+	log.Println("Starting remote container")
+	if err := s.RemoteWrapper.RunContainer("9093"); err != nil {
+		log.Fatalf("Error occurred while running remote container, err: %+v", err)
+	}
+
+	log.Printf("Local Container is running on address: %s", s.Wrapper.GetBrokerAddress())
+	log.Printf("Remote Container is running on address: %s", s.RemoteWrapper.GetBrokerAddress())
+
 }
 
 func (s *testKafkaSuite) TearDownSuite() {
 	s.Wrapper.CleanUp()
+	s.RemoteWrapper.CleanUp()
 }
