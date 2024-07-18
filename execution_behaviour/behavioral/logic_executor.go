@@ -3,7 +3,7 @@ package behavioral
 import (
 	"context"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 //go:generate mockgen -destination=../../mocks/logic_operator_mock.go -package=mocks -source=logic_executor.go

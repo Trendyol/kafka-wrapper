@@ -1,7 +1,7 @@
 package kafka_wrapper
 
 import (
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
 	"log"
 	"strings"

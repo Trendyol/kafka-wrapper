@@ -1,6 +1,6 @@
 package params
 
-import "github.com/Shopify/sarama"
+import "github.com/IBM/sarama"
 
 type ConnectionParameters struct {
 	Conf            *sarama.Config

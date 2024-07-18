@@ -2,7 +2,7 @@ package behavioral
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type errorBehaviour struct {

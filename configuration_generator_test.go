@@ -1,7 +1,7 @@
 package kafka_wrapper_test
 
 import (
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	kafka_wrapper "github.com/Trendyol/kafka-wrapper"
 	"github.com/stretchr/testify/assert"
 	"testing"

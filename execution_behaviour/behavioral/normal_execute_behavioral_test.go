@@ -3,7 +3,7 @@ package behavioral_test
 import (
 	"context"
 	"errors"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/execution_behaviour/behavioral"
 	"github.com/Trendyol/kafka-wrapper/mocks"
 	"github.com/golang/mock/gomock"

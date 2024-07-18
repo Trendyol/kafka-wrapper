@@ -1,7 +1,7 @@
 package test_utils
 
 import (
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
 )
 

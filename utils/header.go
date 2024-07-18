@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/Shopify/sarama"
+import "github.com/IBM/sarama"
 
 //go:generate mockgen -destination=../mocks/header_mock.go -package=mocks -source=header.go
 

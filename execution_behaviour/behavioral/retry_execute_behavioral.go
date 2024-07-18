@@ -3,7 +3,7 @@ package behavioral
 import (
 	"context"
 	"fmt"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/utils"
 	"time"
 )

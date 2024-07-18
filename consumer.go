@@ -3,7 +3,7 @@ package kafka_wrapper
 import (
 	"context"
 	"fmt"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
 	"strings"
 )

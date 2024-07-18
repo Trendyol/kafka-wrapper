@@ -2,7 +2,7 @@ package test_utils
 
 import (
 	"fmt"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper"
 	"github.com/Trendyol/kafka-wrapper/execution_behaviour"
 )

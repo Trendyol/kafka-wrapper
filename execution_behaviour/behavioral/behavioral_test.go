@@ -2,7 +2,7 @@ package behavioral_test
 
 import (
 	"errors"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type mockSyncProducer struct {

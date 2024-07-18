@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	sarama "github.com/Shopify/sarama"
+	sarama "github.com/IBM/sarama"
 	gomock "github.com/golang/mock/gomock"
 )
 

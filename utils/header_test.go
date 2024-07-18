@@ -1,7 +1,7 @@
 package utils_test
 
 import (
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/utils"
 	"github.com/stretchr/testify/assert"
 	"testing"
