@@ -48,7 +48,7 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 
 		err = k.executor.Operate(ctx, message)
 		if err == nil {
-			fmt.Printf("Message is executed successfully, message topic: %+v\n", message.Topic)
+			fmt.Printf("Message is executed successfully, message key: %+v\n", message.Key)
 			break
 		}
 	}
