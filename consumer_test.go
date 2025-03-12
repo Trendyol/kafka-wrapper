@@ -121,3 +121,48 @@ func (s *testKafkaSuite) Test_not_consume_when_broker_is_not_reachable() {
 	// Then
 	assert.NotNil(expectedError)
 }
+
+func (s *testKafkaSuite) Test_stop_consume_after_unsubscription() {
+	// Given
+	var (
+		assert = testifyAssert.New(s.T())
+
+		connectionParams = params.ConnectionParameters{
+			ConsumerGroupID: "consumer-group",
+		}
+		topicParams = params.TopicsParameters{
+			Topic:      "test-topic",
+			RetryTopic: "test-topic_retry",
+			ErrorTopic: "test-topic_error",
+		}
+		messageChn = make(chan string, 1)
+	)
+
+	connectionParams.Brokers = s.Wrapper.GetBrokerAddress()
+	connectionParams.Conf = test_utils.CreateBasicConf()
+
+	time.Sleep(5 * time.Second)
+
+	// When
+	testConsumer, err := kafka_wrapper.NewConsumer(connectionParams)
+	assert.NoError(err, "NewConsumer should not error")
+	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
+
+	testConsumer.Unsubscribe()
+
+	testProducer, err := kafka_wrapper.NewProducer(connectionParams)
+	assert.NoError(err, "NewProducer should not error")
+	_, _, err = testProducer.SendMessage(&sarama.ProducerMessage{
+		Value: sarama.StringEncoder("should-not-be-received"),
+		Topic: topicParams.Topic,
+	})
+	assert.NoError(err, "SendMessage should not error")
+
+	// Then
+	select {
+	case msg := <-messageChn:
+		assert.FailNow("Received message after unsubscription: " + msg)
+	case <-time.After(3 * time.Second):
+		// No message received: Test passes.
+	}
+}
