@@ -48,7 +48,8 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_local() {
 		Topic: topicParams.ErrorTopic,
 	})
 
-	testConsumer, _ := kafka_wrapper.NewRemoteConsumer(remoteConnectionParams, localConnectionParams)
+	testConsumer, err := kafka_wrapper.NewRemoteConsumer(remoteConnectionParams, localConnectionParams)
+	assert.NoError(err, "NewRemoteConsumer should not error")
 	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
 	receivedMessage = <-messageChn
 

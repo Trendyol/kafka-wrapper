@@ -2,6 +2,7 @@ package kafka_wrapper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
@@ -16,6 +17,8 @@ type Consumer interface {
 
 type kafkaConsumer struct {
 	consumerGroup sarama.ConsumerGroup
+	ctx           context.Context
+	cancelFunc    context.CancelFunc
 }
 
 func NewConsumer(connectionParams params.ConnectionParameters) (Consumer, error) {
@@ -24,8 +27,11 @@ func NewConsumer(connectionParams params.ConnectionParameters) (Consumer, error)
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	return &kafkaConsumer{
 		consumerGroup: cg,
+		ctx:           ctx,
+		cancelFunc:    cancel,
 	}, nil
 }
 
@@ -34,41 +40,36 @@ func (c *kafkaConsumer) SubscribeToTopic(topicParams params.TopicsParameters, ha
 }
 
 func (c *kafkaConsumer) Subscribe(topicParams []params.TopicsParameters, handler EventHandler) {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	go func() {
 		for {
-			if err := c.consumerGroup.Consume(ctx, params.JoinAllTopics(topicParams), handler); err != nil {
-				fmt.Printf("Error from consumer: %+v \n", err.Error())
+			if c.ctx.Err() != nil {
+				fmt.Printf("Consumer context canceled, exiting\n")
+				return
 			}
 
-			if ctx.Err() != nil {
-				fmt.Printf("Error from consumer: %+v \n", ctx.Err().Error())
+			err := c.consumerGroup.Consume(c.ctx, params.JoinAllTopics(topicParams), handler)
+			if err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+					return
+				}
+				fmt.Printf("Error from consumer: %v\n", err)
 			}
 		}
 	}()
 
 	go func() {
 		for err := range c.consumerGroup.Errors() {
-			fmt.Printf("Error from consumer group: %+v \n", err.Error())
+			fmt.Printf("Error from consumer group: %v\n", err)
 		}
 	}()
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				fmt.Println("terminating: context cancelled")
-				cancel()
-			}
-		}
-	}()
 	fmt.Printf("Kafka consumer listens topic : %+v \n", topicParams)
 }
 
 func (c *kafkaConsumer) Unsubscribe() {
+	c.cancelFunc()
 	if err := c.consumerGroup.Close(); err != nil {
-		fmt.Printf("Client wasn't closed: %+v \n", err)
+		fmt.Printf("Client wasn't closed: %v\n", err)
 	}
 	fmt.Println("Kafka consumer closed")
 }
