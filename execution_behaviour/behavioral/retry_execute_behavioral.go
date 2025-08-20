@@ -57,10 +57,10 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 	}
 
 	if err != nil {
-		k.loggerHelper.Error(ctx, "Message is not executed successfully: %+v so routing it to the error topic: %+v", message.Topic, k.errorTopic)
+		k.loggerHelper.Error(ctx, "Message is not executed successfully: %+v so routing it to the error topic: %+v. err: %+v", message.Topic, k.errorTopic, err)
 		err = k.sendToErrorTopic(message, err.Error())
 		if err != nil {
-			k.loggerHelper.Error(ctx, "Message is not published to the error topic: %+v", k.errorTopic)
+			k.loggerHelper.Error(ctx, "Message is not published to the error topic: %+v. err: %+v", k.errorTopic, err)
 			return err
 		}
 	}

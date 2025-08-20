@@ -80,5 +80,5 @@ func (c *kafkaConsumer) Unsubscribe() {
 		c.loggerHelper.Error(ctx, "Client wasn't closed: %v", err)
 	}
 
-	c.loggerHelper.Info(ctx, "Kafka consumer closed", nil)
+	c.loggerHelper.Info(ctx, "Kafka consumer closed")
 }
