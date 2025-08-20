@@ -23,6 +23,20 @@ type behaviourSelector struct {
 }
 
 func NewBehaviourSelector(normalOperator behavioral.LogicOperator, errorOperator behavioral.LogicOperator, producer sarama.SyncProducer,
+	retryCount int, retryTopic, errorTopic string) *behaviourSelector {
+	return &behaviourSelector{
+		normalOperator: normalOperator,
+		producer:       producer,
+		retryTopic:     retryTopic,
+		errorTopic:     errorTopic,
+		retryCount:     retryCount,
+		errorOperator:  errorOperator,
+		headerOperator: utils.NewHeaderOperator(),
+		logger:         nil,
+	}
+}
+
+func NewBehaviourSelectorWithLogger(normalOperator behavioral.LogicOperator, errorOperator behavioral.LogicOperator, producer sarama.SyncProducer,
 	retryCount int, retryTopic, errorTopic string, logger params.Logger) *behaviourSelector {
 	return &behaviourSelector{
 		normalOperator: normalOperator,
@@ -37,6 +51,20 @@ func NewBehaviourSelector(normalOperator behavioral.LogicOperator, errorOperator
 }
 
 func NewRetryOnlyBehavioralSelector(normalOperator behavioral.LogicOperator, producer sarama.SyncProducer,
+	retryCount int, retryTopic, errorTopic string) *behaviourSelector {
+	return &behaviourSelector{
+		normalOperator: normalOperator,
+		errorOperator:  nil,
+		producer:       producer,
+		retryTopic:     retryTopic,
+		errorTopic:     errorTopic,
+		retryCount:     retryCount,
+		headerOperator: utils.NewHeaderOperator(),
+		logger:         nil,
+	}
+}
+
+func NewRetryOnlyBehavioralSelectorWithLogger(normalOperator behavioral.LogicOperator, producer sarama.SyncProducer,
 	retryCount int, retryTopic, errorTopic string, logger params.Logger) *behaviourSelector {
 	return &behaviourSelector{
 		normalOperator: normalOperator,
