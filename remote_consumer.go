@@ -48,7 +48,7 @@ func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, h
 			if c.ctx.Err() != nil {
 				return
 			}
-			err := c.remoteConsumer.Consume(c.ctx, params.JoinMainTopics(topicParams), handler)
+			err := c.remoteConsumer.Consume(c.ctx, params.JoinMainTopics(topicParams, c.loggerHelper), handler)
 			if err != nil {
 				c.loggerHelper.Error(ctx, "Error from remote consumer: %v", err)
 			}
@@ -60,7 +60,7 @@ func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, h
 			if c.ctx.Err() != nil {
 				return
 			}
-			err := c.localConsumer.Consume(c.ctx, params.JoinSecondaryTopics(topicParams), handler)
+			err := c.localConsumer.Consume(c.ctx, params.JoinSecondaryTopics(topicParams, c.loggerHelper), handler)
 			if err != nil {
 				c.loggerHelper.Error(ctx, "Error from local consumer: %v", err)
 			}

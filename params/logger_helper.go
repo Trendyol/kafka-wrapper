@@ -48,3 +48,7 @@ func (h *LoggerHelper) Debug(ctx context.Context, message string, args ...interf
 		fmt.Printf(message+"\n", args...)
 	}
 }
+
+func (h *LoggerHelper) HasLogger() bool {
+	return h.hasLogger
+}
