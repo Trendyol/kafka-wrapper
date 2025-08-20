@@ -1,16 +1,18 @@
 package kafka_wrapper
 
 import (
+	"context"
+	"strings"
+
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
-	"log"
-	"strings"
 )
 
 func NewProducer(connectionParams params.ConnectionParameters) (sarama.SyncProducer, error) {
 	syncProducer, err := sarama.NewSyncProducer(strings.Split(connectionParams.Brokers, ","), connectionParams.Conf)
 	if err != nil {
-		log.Printf("could not create producer: %s\n", err)
+		loggerHelper := params.NewLoggerHelper(connectionParams.Logger)
+		loggerHelper.Error(context.Background(), "could not create producer: %s", err)
 		return nil, err
 	}
 

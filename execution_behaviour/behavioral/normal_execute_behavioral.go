@@ -2,30 +2,33 @@ package behavioral
 
 import (
 	"context"
-	"fmt"
+
 	"github.com/IBM/sarama"
+	"github.com/Trendyol/kafka-wrapper/params"
 )
 
 type normalBehaviour struct {
-	producer   sarama.SyncProducer
-	executor   LogicOperator
-	retryTopic string
+	producer     sarama.SyncProducer
+	executor     LogicOperator
+	retryTopic   string
+	loggerHelper *params.LoggerHelper
 }
 
-func NormalBehavioral(producer sarama.SyncProducer, retryTopic string, executor LogicOperator) BehaviourExecutor {
+func NormalBehavioral(producer sarama.SyncProducer, retryTopic string, executor LogicOperator, logger params.Logger) BehaviourExecutor {
 	return &normalBehaviour{
-		producer:   producer,
-		executor:   executor,
-		retryTopic: retryTopic,
+		producer:     producer,
+		executor:     executor,
+		retryTopic:   retryTopic,
+		loggerHelper: params.NewLoggerHelper(logger),
 	}
 }
 
 func (k *normalBehaviour) Process(ctx context.Context, message *sarama.ConsumerMessage) (err error) {
 	if err = k.executor.Operate(ctx, message); err != nil {
-		fmt.Printf("Have an error occurred while executing the logic: %+v, err:%+v\n", message.Topic, err)
+		k.loggerHelper.Error(ctx, "Have an error occurred while executing the logic: %+v, err:%+v", message.Topic, err)
 		err = k.sendToRetryTopic(message, err)
 		if err != nil {
-			fmt.Printf("Have an error occurred while publishing to retry topic: %+v , err:%+v\n", k.retryTopic, err)
+			k.loggerHelper.Error(ctx, "Have an error occurred while publishing to retry topic: %+v , err:%+v", k.retryTopic, err)
 		}
 	}
 	return err

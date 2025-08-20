@@ -3,10 +3,10 @@ package kafka_wrapper
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strings"
+
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
-	"strings"
 )
 
 type Consumer interface {
@@ -19,6 +19,7 @@ type kafkaConsumer struct {
 	consumerGroup sarama.ConsumerGroup
 	ctx           context.Context
 	cancelFunc    context.CancelFunc
+	loggerHelper  *params.LoggerHelper
 }
 
 func NewConsumer(connectionParams params.ConnectionParameters) (Consumer, error) {
@@ -28,10 +29,12 @@ func NewConsumer(connectionParams params.ConnectionParameters) (Consumer, error)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	return &kafkaConsumer{
 		consumerGroup: cg,
 		ctx:           ctx,
 		cancelFunc:    cancel,
+		loggerHelper:  params.NewLoggerHelper(connectionParams.Logger),
 	}, nil
 }
 
@@ -40,10 +43,12 @@ func (c *kafkaConsumer) SubscribeToTopic(topicParams params.TopicsParameters, ha
 }
 
 func (c *kafkaConsumer) Subscribe(topicParams []params.TopicsParameters, handler EventHandler) {
+	ctx := context.Background()
+
 	go func() {
 		for {
 			if c.ctx.Err() != nil {
-				fmt.Printf("Consumer context canceled, exiting\n")
+				c.loggerHelper.Error(ctx, "Consumer context canceled, exiting: %v", c.ctx.Err())
 				return
 			}
 
@@ -52,24 +57,28 @@ func (c *kafkaConsumer) Subscribe(topicParams []params.TopicsParameters, handler
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					return
 				}
-				fmt.Printf("Error from consumer: %v\n", err)
+				c.loggerHelper.Error(ctx, "Error from consumer: %v", err)
 			}
 		}
 	}()
 
 	go func() {
 		for err := range c.consumerGroup.Errors() {
-			fmt.Printf("Error from consumer group: %v\n", err)
+			c.loggerHelper.Error(ctx, "Error from consumer group: %v", err)
 		}
 	}()
 
-	fmt.Printf("Kafka consumer listens topic : %+v \n", topicParams)
+	c.loggerHelper.Info(ctx, "Kafka consumer listens topic : %+v ", topicParams)
 }
 
 func (c *kafkaConsumer) Unsubscribe() {
 	c.cancelFunc()
+
+	ctx := context.Background()
+
 	if err := c.consumerGroup.Close(); err != nil {
-		fmt.Printf("Client wasn't closed: %v\n", err)
+		c.loggerHelper.Error(ctx, "Client wasn't closed: %v", err)
 	}
-	fmt.Println("Kafka consumer closed")
+
+	c.loggerHelper.Info(ctx, "Kafka consumer closed", nil)
 }

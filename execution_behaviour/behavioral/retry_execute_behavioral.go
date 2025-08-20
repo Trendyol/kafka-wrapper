@@ -2,10 +2,11 @@ package behavioral
 
 import (
 	"context"
-	"fmt"
-	"github.com/IBM/sarama"
-	"github.com/Trendyol/kafka-wrapper/utils"
 	"time"
+
+	"github.com/IBM/sarama"
+	"github.com/Trendyol/kafka-wrapper/params"
+	"github.com/Trendyol/kafka-wrapper/utils"
 )
 
 const ErrorKey = "ErrorMessage"
@@ -18,15 +19,17 @@ type retryBehaviour struct {
 	retryCount     int
 	errorTopic     string
 	headerOperator utils.HeaderOperation
+	loggerHelper   *params.LoggerHelper
 }
 
-func RetryBehavioral(producer sarama.SyncProducer, errorTopic string, executor LogicOperator, retryCount int, headerOperator utils.HeaderOperation) BehaviourExecutor {
+func RetryBehavioral(producer sarama.SyncProducer, errorTopic string, executor LogicOperator, retryCount int, headerOperator utils.HeaderOperation, logger params.Logger) BehaviourExecutor {
 	return &retryBehaviour{
 		producer:       producer,
 		executor:       executor,
 		retryCount:     retryCount,
 		errorTopic:     errorTopic,
 		headerOperator: headerOperator,
+		loggerHelper:   params.NewLoggerHelper(logger),
 	}
 }
 
@@ -37,10 +40,10 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 			latestExecutableTime := time.Now().Add(time.Duration(-5) * time.Second)
 			if latestExecutableTime.Before(message.Timestamp) {
 				sleepTime := message.Timestamp.Sub(latestExecutableTime)
-				fmt.Printf("System will sleep for %+v\n", sleepTime)
+				k.loggerHelper.Info(ctx, "System will sleep for %+v", sleepTime)
 				time.Sleep(sleepTime)
 			} else {
-				fmt.Printf("No need to sleep for message time %+v\n", message.Timestamp)
+				k.loggerHelper.Info(ctx, "No need to sleep for message time %+v", message.Timestamp)
 			}
 		} else {
 			time.Sleep(250 * time.Millisecond)
@@ -48,16 +51,16 @@ func (k *retryBehaviour) Process(ctx context.Context, message *sarama.ConsumerMe
 
 		err = k.executor.Operate(ctx, message)
 		if err == nil {
-			fmt.Printf("Message is executed successfully, message key: %+v\n", message.Key)
+			k.loggerHelper.Info(ctx, "Message is executed successfully, message key: %+v", message.Key)
 			break
 		}
 	}
 
 	if err != nil {
-		fmt.Printf("Message is not executed successfully: %+v so routing it to the error topic: %+v \n", message.Topic, k.errorTopic)
+		k.loggerHelper.Error(ctx, "Message is not executed successfully: %+v so routing it to the error topic: %+v", message.Topic, k.errorTopic)
 		err = k.sendToErrorTopic(message, err.Error())
 		if err != nil {
-			fmt.Printf("Message is not published to the error topic: %+v\n", k.errorTopic)
+			k.loggerHelper.Error(ctx, "Message is not published to the error topic: %+v", k.errorTopic)
 			return err
 		}
 	}

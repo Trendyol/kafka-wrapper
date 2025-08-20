@@ -3,12 +3,13 @@ package behavioral_test
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/execution_behaviour/behavioral"
 	"github.com/Trendyol/kafka-wrapper/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_retry_executor_should_call_executor_and_not_produce_message_when_executor_succeeds(t *testing.T) {
@@ -21,7 +22,7 @@ func Test_retry_executor_should_call_executor_and_not_produce_message_when_execu
 		retryCount         = 3
 		headerOperatorMock = mocks.NewMockheaderOperation(ctrl)
 		retryTopicName     = "TheRetryTopic"
-		retryExecutor      = behavioral.RetryBehavioral(producerMock, errorTopic, executorMock, retryCount, headerOperatorMock)
+		retryExecutor      = behavioral.RetryBehavioral(producerMock, errorTopic, executorMock, retryCount, headerOperatorMock, nil)
 	)
 
 	executorMock.EXPECT().Operate(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -46,7 +47,7 @@ func Test_retry_executor_should_call_executor_retry_limit_times_and_produce_mess
 		retryCount         = 3
 		retryTopicName     = "theRetryTopic"
 		headerOperatorMock = mocks.NewMockheaderOperation(ctrl)
-		retryExecutor      = behavioral.RetryBehavioral(producerMock, errorTopic, executorMock, retryCount, headerOperatorMock)
+		retryExecutor      = behavioral.RetryBehavioral(producerMock, errorTopic, executorMock, retryCount, headerOperatorMock, nil)
 	)
 
 	executorMock.EXPECT().Operate(gomock.Any(), gomock.Any()).Times(3).Return(errors.New("testingError"))
@@ -72,7 +73,7 @@ func Test_retry_executor_should_fail_when_producing_operation_fails(t *testing.T
 		executorMock       = mocks.NewMockLogicOperator(ctrl)
 		retryCount         = 3
 		headerOperatorMock = mocks.NewMockheaderOperation(ctrl)
-		retryExecutor      = behavioral.RetryBehavioral(producerMock, errorTopic, executorMock, retryCount, headerOperatorMock)
+		retryExecutor      = behavioral.RetryBehavioral(producerMock, errorTopic, executorMock, retryCount, headerOperatorMock, nil)
 	)
 
 	executorMock.EXPECT().Operate(gomock.Any(), gomock.Any()).Times(3).Return(errors.New("testingError"))
