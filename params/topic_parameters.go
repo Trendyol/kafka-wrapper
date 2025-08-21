@@ -1,6 +1,9 @@
 package params
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 type TopicsParameters struct {
 	Topic                 string
@@ -25,23 +28,32 @@ func JoinAllTopics(topics []TopicsParameters) []string {
 	return allTopics
 }
 
-func JoinMainTopics(topics []TopicsParameters) []string {
+func JoinMainTopics(topics []TopicsParameters, loggerHelper *LoggerHelper) []string {
 	allTopics := make([]string, 0)
 	for _, topic := range topics {
 		allTopics = append(allTopics, topic.Topic)
 	}
-	fmt.Printf("JoinMainTopics : %+v  \n", allTopics)
+
+	if loggerHelper != nil && loggerHelper.HasLogger() {
+		loggerHelper.Info(context.Background(), "JoinMainTopics : %+v  ", allTopics)
+	} else {
+		fmt.Printf("JoinMainTopics : %+v  \n", allTopics)
+	}
 
 	return allTopics
 }
 
-func JoinSecondaryTopics(topics []TopicsParameters) []string {
-
+func JoinSecondaryTopics(topics []TopicsParameters, loggerHelper *LoggerHelper) []string {
 	allTopics := make([]string, 0)
 	for _, topic := range topics {
 		allTopics = append(allTopics, topic.getSecondaryTopics()...)
 	}
-	fmt.Printf("JoinSecondaryTopics : %+v  \n", allTopics)
+
+	if loggerHelper != nil && loggerHelper.HasLogger() {
+		loggerHelper.Info(context.Background(), "JoinSecondaryTopics : %+v  ", allTopics)
+	} else {
+		fmt.Printf("JoinSecondaryTopics : %+v  \n", allTopics)
+	}
 
 	return allTopics
 }

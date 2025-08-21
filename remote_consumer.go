@@ -2,10 +2,10 @@ package kafka_wrapper
 
 import (
 	"context"
-	"fmt"
+	"strings"
+
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/params"
-	"strings"
 )
 
 type remoteKafkaConsumer struct {
@@ -13,6 +13,7 @@ type remoteKafkaConsumer struct {
 	localConsumer  sarama.ConsumerGroup
 	ctx            context.Context
 	cancelFunc     context.CancelFunc
+	loggerHelper   *params.LoggerHelper
 }
 
 func NewRemoteConsumer(remoteParams params.ConnectionParameters, localParams params.ConnectionParameters) (Consumer, error) {
@@ -26,11 +27,13 @@ func NewRemoteConsumer(remoteParams params.ConnectionParameters, localParams par
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	return &remoteKafkaConsumer{
 		remoteConsumer: remote,
 		localConsumer:  local,
 		ctx:            ctx,
 		cancelFunc:     cancel,
+		loggerHelper:   params.NewLoggerHelper(remoteParams.Logger),
 	}, nil
 }
 func (c *remoteKafkaConsumer) SubscribeToTopic(topicParams params.TopicsParameters, handler EventHandler) {
@@ -38,14 +41,16 @@ func (c *remoteKafkaConsumer) SubscribeToTopic(topicParams params.TopicsParamete
 }
 
 func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, handler EventHandler) {
+	ctx := context.Background()
+
 	go func() {
 		for {
 			if c.ctx.Err() != nil {
 				return
 			}
-			err := c.remoteConsumer.Consume(c.ctx, params.JoinMainTopics(topicParams), handler)
+			err := c.remoteConsumer.Consume(c.ctx, params.JoinMainTopics(topicParams, c.loggerHelper), handler)
 			if err != nil {
-				fmt.Printf("Error from remote consumer: %v\n", err)
+				c.loggerHelper.Error(ctx, "Error from remote consumer: %v", err)
 			}
 		}
 	}()
@@ -55,36 +60,39 @@ func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, h
 			if c.ctx.Err() != nil {
 				return
 			}
-			err := c.localConsumer.Consume(c.ctx, params.JoinSecondaryTopics(topicParams), handler)
+			err := c.localConsumer.Consume(c.ctx, params.JoinSecondaryTopics(topicParams, c.loggerHelper), handler)
 			if err != nil {
-				fmt.Printf("Error from local consumer: %v\n", err)
+				c.loggerHelper.Error(ctx, "Error from local consumer: %v", err)
 			}
 		}
 	}()
 
 	go func() {
 		for err := range c.remoteConsumer.Errors() {
-			fmt.Printf("Error from remote consumer group: %v\n", err)
+			c.loggerHelper.Error(ctx, "Error from remote consumer group: %v", err)
 		}
 	}()
 
 	go func() {
 		for err := range c.localConsumer.Errors() {
-			fmt.Printf("Error from local consumer group: %v\n", err)
+			c.loggerHelper.Error(ctx, "Error from local consumer group: %v", err)
 		}
 	}()
 
-	fmt.Printf("Kafka consumer listens topic: %+v\n", topicParams)
+	c.loggerHelper.Info(ctx, "Kafka consumer listens topic: %+v", topicParams)
 }
 
 func (c *remoteKafkaConsumer) Unsubscribe() {
 	c.cancelFunc()
 
+	ctx := context.Background()
+
 	if err := c.remoteConsumer.Close(); err != nil {
-		fmt.Printf("Remote consumer wasn't closed: %v\n", err)
+		c.loggerHelper.Error(ctx, "Remote client wasn't closed: %v", err)
 	}
 	if err := c.localConsumer.Close(); err != nil {
-		fmt.Printf("Local consumer wasn't closed: %v\n", err)
+		c.loggerHelper.Error(ctx, "Local client wasn't closed: %v", err)
 	}
-	fmt.Println("Kafka consumer closed")
+
+	c.loggerHelper.Info(ctx, "Kafka consumer closed")
 }

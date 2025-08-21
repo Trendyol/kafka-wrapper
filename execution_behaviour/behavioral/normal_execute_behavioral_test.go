@@ -3,12 +3,13 @@ package behavioral_test
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/execution_behaviour/behavioral"
 	"github.com/Trendyol/kafka-wrapper/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func Test_normal_executor_should_call_executor_and_not_produce_message_when_executor_succeeds(t *testing.T) {
@@ -18,7 +19,7 @@ func Test_normal_executor_should_call_executor_and_not_produce_message_when_exec
 		retryTopic     = "RetryTopicName"
 		ctrl           = gomock.NewController(t)
 		executorMock   = mocks.NewMockLogicOperator(ctrl)
-		normalExecutor = behavioral.NormalBehavioral(producerMock, retryTopic, executorMock)
+		normalExecutor = behavioral.NormalBehavioral(producerMock, retryTopic, executorMock, nil)
 	)
 
 	executorMock.EXPECT().Operate(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -38,7 +39,7 @@ func Test_normal_executor_should_call_executor_and_produce_message_when_executor
 		retryTopic     = "RetryTopicName"
 		ctrl           = gomock.NewController(t)
 		executorMock   = mocks.NewMockLogicOperator(ctrl)
-		normalExecutor = behavioral.NormalBehavioral(producerMock, retryTopic, executorMock)
+		normalExecutor = behavioral.NormalBehavioral(producerMock, retryTopic, executorMock, nil)
 	)
 
 	executorMock.EXPECT().Operate(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("testingError"))
@@ -59,7 +60,7 @@ func Test_normal_executor_should_fail_when_message_producing_operations_fails(t 
 		retryTopic     = "RetryTopicName"
 		ctrl           = gomock.NewController(t)
 		executorMock   = mocks.NewMockLogicOperator(ctrl)
-		normalExecutor = behavioral.NormalBehavioral(producerMock, retryTopic, executorMock)
+		normalExecutor = behavioral.NormalBehavioral(producerMock, retryTopic, executorMock, nil)
 	)
 
 	executorMock.EXPECT().Operate(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("testingError"))
