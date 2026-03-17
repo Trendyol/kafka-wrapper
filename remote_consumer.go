@@ -2,6 +2,7 @@ package kafka_wrapper
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/IBM/sarama"
@@ -50,6 +51,9 @@ func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, h
 			}
 			err := c.remoteConsumer.Consume(c.ctx, params.JoinMainTopics(topicParams, c.loggerHelper), handler)
 			if err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+					return
+				}
 				c.loggerHelper.Error(ctx, "Error from remote consumer: %v", err)
 			}
 		}
@@ -62,6 +66,9 @@ func (c *remoteKafkaConsumer) Subscribe(topicParams []params.TopicsParameters, h
 			}
 			err := c.localConsumer.Consume(c.ctx, params.JoinSecondaryTopics(topicParams, c.loggerHelper), handler)
 			if err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+					return
+				}
 				c.loggerHelper.Error(ctx, "Error from local consumer: %v", err)
 			}
 		}
