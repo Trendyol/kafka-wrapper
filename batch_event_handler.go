@@ -3,7 +3,6 @@ package kafka_wrapper
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/IBM/sarama"
 	"github.com/Trendyol/kafka-wrapper/execution_behaviour"
@@ -16,10 +15,10 @@ const (
 	defaultBatchBufferSize   = 100
 )
 
-// ContextEnricher is used for project-specific context enrichment (tracing, newrelic, etc.).
-// Enrich reads headers from the message and writes them to context; cleanup is called at the end of processing (e.g. to end a newrelic transaction).
+// ContextEnricher is used for project-specific context enrichment (tracing, otel, etc.).
+// Enrich reads headers from the message and writes them to context.
 type ContextEnricher interface {
-	Enrich(ctx context.Context, message *sarama.ConsumerMessage) (context.Context, func())
+	Enrich(ctx context.Context, message *sarama.ConsumerMessage) (context.Context)
 }
 
 // BatchEventHandlerConfig is the configuration for the batch event handler.
@@ -44,7 +43,6 @@ type batchEventHandler struct {
 	cfg        *BatchEventHandlerConfig
 	selector   execution_behaviour.BehavioralSelector
 	msgCh      chan *batchMessage
-	workerDone sync.WaitGroup
 }
 
 // NewBatchEventHandler returns the shared batch event handler with the given BehavioralSelector and config.
@@ -70,7 +68,6 @@ func NewBatchEventHandler(selector execution_behaviour.BehavioralSelector, cfg *
 	}
 
 	for i := 0; i < routineCount; i++ {
-		h.workerDone.Add(1)
 		go h.worker(msgCh)
 	}
 
@@ -105,12 +102,10 @@ func (h *batchEventHandler) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 }
 
 func (h *batchEventHandler) worker(msgCh chan *batchMessage) {
-	defer h.workerDone.Done()
 	for work := range msgCh {
 		ctx := context.Background()
-		var cleanup func()
 		if h.cfg.ContextEnricher != nil {
-			ctx, cleanup = h.cfg.ContextEnricher.Enrich(ctx, work.message)
+			ctx = h.cfg.ContextEnricher.Enrich(ctx, work.message)
 		}
 		if err := work.processor.Process(ctx, work.message); err != nil {
 			if h.cfg.Logger != nil {
@@ -118,9 +113,6 @@ func (h *batchEventHandler) worker(msgCh chan *batchMessage) {
 			} else {
 				fmt.Printf("batch event handler process error: %v\n", err)
 			}
-		}
-		if cleanup != nil {
-			cleanup()
 		}
 		work.session.MarkMessage(work.message, "")
 	}
