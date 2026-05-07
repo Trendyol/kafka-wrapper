@@ -3,11 +3,12 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"runtime"
+
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"runtime"
 	"time"
 )
 
@@ -21,7 +22,17 @@ type TestContainerWrapper struct {
 	hostPort  int
 }
 
+func brokerAdvertiseHost() string {
+	if isRunningOnOSX() {
+		return "127.0.0.1"
+	}
+	return "localhost"
+}
+
 func (t *TestContainerWrapper) RunContainer(portInfo string) error {
+	// Clients connect from the host; Redpanda must advertise the same host:port or clients get
+	// unreachable brokers in metadata (connection reset / EOF).
+	advHost := brokerAdvertiseHost()
 	req := testcontainers.ContainerRequest{
 		Image: fmt.Sprintf("%s:%s", RedpandaImage, RedpandaVersion),
 		ExposedPorts: []string{
@@ -30,7 +41,13 @@ func (t *TestContainerWrapper) RunContainer(portInfo string) error {
 		Cmd: []string{
 			"redpanda",
 			"start",
-			"--overprovisioned --smp 1 --memory 1G --reserve-memory 0M --check=false",
+			"--kafka-addr", fmt.Sprintf("PLAINTEXT://0.0.0.0:%s", portInfo),
+			"--advertise-kafka-addr", fmt.Sprintf("PLAINTEXT://%s:%s", advHost, portInfo),
+			"--overprovisioned",
+			"--smp", "1",
+			"--memory", "1G",
+			"--reserve-memory", "0M",
+			"--check=false",
 		},
 		WaitingFor: wait.ForLog("Successfully started Redpanda!"),
 		AutoRemove: true,

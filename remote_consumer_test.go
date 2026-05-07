@@ -15,17 +15,17 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_local() {
 		assert = testifyAssert.New(s.T())
 
 		remoteConnectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "remote-consumer-group",
+			ConsumerGroupID: "remote-consumer-group-local-test",
 		}
 
 		localConnectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "local-consumer-group",
+			ConsumerGroupID: "local-consumer-group-local-test",
 		}
 
 		topicParams = params.TopicsParameters{
-			Topic:      "test-topic",
-			RetryTopic: "test-topic_retry",
-			ErrorTopic: "test-topic_error",
+			Topic:      "msg-local-main",
+			RetryTopic: "msg-local-retry",
+			ErrorTopic: "msg-local-error",
 		}
 		expectedMessage = "test"
 		messageChn      = make(chan string, 1)
@@ -40,21 +40,31 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_local() {
 
 	time.Sleep(5 * time.Second)
 
-	localProducer, _ := kafka_wrapper.NewProducer(localConnectionParams)
+	localProducer, err := kafka_wrapper.NewProducer(localConnectionParams)
+	if !assert.NoError(err) {
+		return
+	}
 
 	// When
-	_, _, _ = localProducer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = localProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage + "local"),
 		Topic: topicParams.ErrorTopic,
 	})
+	if !assert.NoError(err) {
+		return
+	}
 
 	testConsumer, err := kafka_wrapper.NewRemoteConsumer(remoteConnectionParams, localConnectionParams)
-	assert.NoError(err, "NewRemoteConsumer should not error")
+	if !assert.NoError(err, "NewRemoteConsumer should not error") {
+		return
+	}
+	defer testConsumer.Unsubscribe()
+
 	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
 	receivedMessage = <-messageChn
 
 	// Then
-	assert.Equal(receivedMessage, expectedMessage)
+	assert.Equal(expectedMessage+"local", receivedMessage)
 }
 
 func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_remote2() {
@@ -63,17 +73,17 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_remote2() {
 		assert = testifyAssert.New(s.T())
 
 		remoteConnectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "remote-consumer-group",
+			ConsumerGroupID: "remote-consumer-group-r2-test",
 		}
 
 		localConnectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "local-consumer-group",
+			ConsumerGroupID: "local-consumer-group-r2-test",
 		}
 
 		topicParams = params.TopicsParameters{
-			Topic:      "test-topic",
-			RetryTopic: "test-topic_retry",
-			ErrorTopic: "test-topic_error",
+			Topic:      "msg-remote2-main",
+			RetryTopic: "msg-remote2-retry",
+			ErrorTopic: "msg-remote2-error",
 		}
 		expectedMessage = "test"
 		messageChn      = make(chan string, 1)
@@ -88,20 +98,31 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_remote2() {
 
 	time.Sleep(5 * time.Second)
 
-	remoteProducer, _ := kafka_wrapper.NewProducer(localConnectionParams)
+	remoteProducer, err := kafka_wrapper.NewProducer(localConnectionParams)
+	if !assert.NoError(err) {
+		return
+	}
 
 	// When
-	_, _, _ = remoteProducer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = remoteProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage + "remote"),
 		Topic: topicParams.Topic,
 	})
+	if !assert.NoError(err) {
+		return
+	}
 
-	testConsumer, _ := kafka_wrapper.NewRemoteConsumer(localConnectionParams, localConnectionParams)
+	testConsumer, err := kafka_wrapper.NewRemoteConsumer(localConnectionParams, localConnectionParams)
+	if !assert.NoError(err) {
+		return
+	}
+	defer testConsumer.Unsubscribe()
+
 	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
 	receivedMessage = <-messageChn
 
 	// Then
-	assert.Equal(receivedMessage, expectedMessage)
+	assert.Equal(expectedMessage+"remote", receivedMessage)
 }
 
 func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_remote() {
@@ -110,17 +131,17 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_remote() {
 		assert = testifyAssert.New(s.T())
 
 		remoteConnectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "remote-consumer-group",
+			ConsumerGroupID: "remote-consumer-group-r1-test",
 		}
 
 		localConnectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "local-consumer-group",
+			ConsumerGroupID: "local-consumer-group-r1-test",
 		}
 
 		topicParams = params.TopicsParameters{
-			Topic:      "test-topic",
-			RetryTopic: "test-topic_retry",
-			ErrorTopic: "test-topic_error",
+			Topic:      "msg-remote1-main",
+			RetryTopic: "msg-remote1-retry",
+			ErrorTopic: "msg-remote1-error",
 		}
 		expectedMessage = "test"
 		messageChn      = make(chan string, 1)
@@ -135,20 +156,31 @@ func (s *testKafkaSuite) Test_consume_when_a_message_sent_to_remote() {
 
 	time.Sleep(5 * time.Second)
 
-	remoteProducer, _ := kafka_wrapper.NewProducer(remoteConnectionParams)
+	remoteProducer, err := kafka_wrapper.NewProducer(remoteConnectionParams)
+	if !assert.NoError(err) {
+		return
+	}
 
 	// When
 
-	_, _, _ = remoteProducer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = remoteProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage),
 		Topic: topicParams.Topic,
 	})
+	if !assert.NoError(err) {
+		return
+	}
 
-	testConsumer, _ := kafka_wrapper.NewRemoteConsumer(remoteConnectionParams, localConnectionParams)
+	testConsumer, err := kafka_wrapper.NewRemoteConsumer(remoteConnectionParams, localConnectionParams)
+	if !assert.NoError(err) {
+		return
+	}
+	defer testConsumer.Unsubscribe()
+
 	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
 
 	receivedMessage = <-messageChn
 
 	// Then
-	assert.Equal(receivedMessage, expectedMessage)
+	assert.Equal(expectedMessage, receivedMessage)
 }
