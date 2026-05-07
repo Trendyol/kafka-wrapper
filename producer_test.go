@@ -52,7 +52,7 @@ func (s *testKafkaSuite) Test_not_produce_when_broker_is_not_reachable() {
 		expectedError error
 	)
 
-	wrongConf.Brokers = "localhost:9093"
+	wrongConf.Brokers = "127.0.0.1:65531"
 	wrongConf.Conf = test_utils.CreateBasicConf()
 
 	// When

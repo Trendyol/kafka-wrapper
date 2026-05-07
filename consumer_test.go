@@ -15,12 +15,12 @@ func (s *testKafkaSuite) Test_consume_when_broker_is_reachable() {
 		assert = testifyAssert.New(s.T())
 
 		connectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "consumer-group",
+			ConsumerGroupID: "consumer-group-broker-reachable",
 		}
 		topicParams = params.TopicsParameters{
-			Topic:      "test-topic",
-			RetryTopic: "test-topic_retry",
-			ErrorTopic: "test-topic_error",
+			Topic:      "brk-reachable-main",
+			RetryTopic: "brk-reachable-retry",
+			ErrorTopic: "brk-reachable-error",
 		}
 		expectedMessage = "test"
 		messageChn      = make(chan string, 1)
@@ -32,19 +32,31 @@ func (s *testKafkaSuite) Test_consume_when_broker_is_reachable() {
 
 	time.Sleep(5 * time.Second)
 
-	testProducer, _ := kafka_wrapper.NewProducer(connectionParams)
+	testProducer, err := kafka_wrapper.NewProducer(connectionParams)
+	if !assert.NoError(err) {
+		return
+	}
 
 	// When
-	_, _, _ = testProducer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = testProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage),
 		Topic: topicParams.Topic,
 	})
-	testConsumer, _ := kafka_wrapper.NewConsumer(connectionParams)
+	if !assert.NoError(err) {
+		return
+	}
+
+	testConsumer, err := kafka_wrapper.NewConsumer(connectionParams)
+	if !assert.NoError(err) {
+		return
+	}
+	defer testConsumer.Unsubscribe()
+
 	testConsumer.SubscribeToTopic(topicParams, test_utils.NewEventHandler(messageChn))
 	receivedMessage = <-messageChn
 
 	// Then
-	assert.Equal(receivedMessage, expectedMessage)
+	assert.Equal(expectedMessage, receivedMessage)
 }
 
 func (s *testKafkaSuite) Test_consume_multiple_topic_when_broker_is_reachable() {
@@ -53,17 +65,17 @@ func (s *testKafkaSuite) Test_consume_multiple_topic_when_broker_is_reachable() 
 		assert = testifyAssert.New(s.T())
 
 		connectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "consumer-group",
+			ConsumerGroupID: "consumer-group-multi-topic",
 		}
 		testTopic1Params = params.TopicsParameters{
-			Topic:      "test-topic1",
-			RetryTopic: "test-topic1_retry",
-			ErrorTopic: "test-topic1_error",
+			Topic:      "multi-topic-one-main",
+			RetryTopic: "multi-topic-one-retry",
+			ErrorTopic: "multi-topic-one-error",
 		}
 		testTopic2Params = params.TopicsParameters{
-			Topic:      "test-topic2",
-			RetryTopic: "test-topic2_retry",
-			ErrorTopic: "test-topic2_error",
+			Topic:      "multi-topic-two-main",
+			RetryTopic: "multi-topic-two-retry",
+			ErrorTopic: "multi-topic-two-error",
 		}
 
 		expectedMessage1 = "test1"
@@ -80,27 +92,41 @@ func (s *testKafkaSuite) Test_consume_multiple_topic_when_broker_is_reachable() 
 	topics := params.FromTopics(testTopic1Params, testTopic2Params)
 
 	time.Sleep(5 * time.Second)
-	testProducer, _ := kafka_wrapper.NewProducer(connectionParams)
+	testProducer, err := kafka_wrapper.NewProducer(connectionParams)
+	if !assert.NoError(err) {
+		return
+	}
 
 	// When && Then
-	testConsumer, _ := kafka_wrapper.NewConsumer(connectionParams)
+	testConsumer, err := kafka_wrapper.NewConsumer(connectionParams)
+	if !assert.NoError(err) {
+		return
+	}
+	defer testConsumer.Unsubscribe()
+
 	testConsumer.Subscribe(topics, test_utils.NewEventHandler(messageChn))
 
-	_, _, _ = testProducer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = testProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage1),
 		Topic: testTopic1Params.Topic,
 	})
+	if !assert.NoError(err) {
+		return
+	}
 	receivedMessage1 = <-messageChn
-	assert.Equal(receivedMessage1, expectedMessage1)
+	assert.Equal(expectedMessage1, receivedMessage1)
 
 	time.Sleep(5 * time.Second)
 
-	_, _, _ = testProducer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = testProducer.SendMessage(&sarama.ProducerMessage{
 		Value: sarama.StringEncoder(expectedMessage2),
 		Topic: testTopic2Params.Topic,
 	})
+	if !assert.NoError(err) {
+		return
+	}
 	receivedMessage2 = <-messageChn
-	assert.Equal(receivedMessage2, expectedMessage2)
+	assert.Equal(expectedMessage2, receivedMessage2)
 }
 
 func (s *testKafkaSuite) Test_not_consume_when_broker_is_not_reachable() {
@@ -110,7 +136,7 @@ func (s *testKafkaSuite) Test_not_consume_when_broker_is_not_reachable() {
 
 		wrongConf = params.ConnectionParameters{
 			Conf:    sarama.NewConfig(),
-			Brokers: "localhost:9093",
+			Brokers: "127.0.0.1:65531",
 		}
 		expectedError error
 	)
@@ -128,12 +154,12 @@ func (s *testKafkaSuite) Test_stop_consume_after_unsubscription() {
 		assert = testifyAssert.New(s.T())
 
 		connectionParams = params.ConnectionParameters{
-			ConsumerGroupID: "consumer-group",
+			ConsumerGroupID: "consumer-group-unsubscribe",
 		}
 		topicParams = params.TopicsParameters{
-			Topic:      "test-topic",
-			RetryTopic: "test-topic_retry",
-			ErrorTopic: "test-topic_error",
+			Topic:      "unsub-main",
+			RetryTopic: "unsub-retry",
+			ErrorTopic: "unsub-error",
 		}
 		messageChn = make(chan string, 1)
 	)
